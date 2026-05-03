@@ -201,14 +201,14 @@ const nextCtx = nextCanvas.getContext("2d");
 
 let CELL = 28;
 function sizeBoard() {
-  // Reserve space: title (~50) + controls (~160) + items-bar (~50) + buttons (~50) + padding (~60)
-  const reservedH = 370;
-  const reservedW = window.innerWidth > 700 ? 240 : 140; // sidebar + padding
+  // Tighter reserved space
+  const reservedH = 320;
+  const reservedW = window.innerWidth > 700 ? 200 : 130;
   const availH = window.innerHeight - reservedH;
   const availW = window.innerWidth - reservedW;
   const cellH = Math.floor(availH / ROWS);
   const cellW = Math.floor(availW / COLS);
-  CELL = Math.max(18, Math.min(cellH, cellW, 44));
+  CELL = Math.max(20, Math.min(cellH, cellW, 50));
   board.width = CELL * COLS;
   board.height = CELL * ROWS;
 }
