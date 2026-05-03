@@ -221,7 +221,9 @@ function newGrid() { return Array.from({length: ROWS}, () => Array(COLS).fill(nu
 
 function randomPiece() {
   const keys = Object.keys(SHAPES);
-  const k = keys[Math.floor(Math.random() * keys.length)];
+  let k;
+  if (forceRainbow) { k = "I"; forceRainbow = false; }
+  else k = keys[Math.floor(Math.random() * keys.length)];
   return {
     type: k,
     shape: SHAPES[k].map(r => r.slice()),
@@ -441,7 +443,8 @@ function loop(t) {
   lastTime = t;
   if (!paused && !gameOver) {
     accumulator += dt;
-    while (accumulator >= dropInterval) { tick(); accumulator -= dropInterval; }
+    const interval = (Date.now() < slowUntil) ? dropInterval * 2 : dropInterval;
+    while (accumulator >= interval) { tick(); accumulator -= interval; }
   }
   requestAnimationFrame(loop);
 }
@@ -454,11 +457,16 @@ function start() {
   dropInterval = 800; accumulator = 0; lastTime = 0;
   nextPiece = null;
   roundCoins = 0;
+  if (owned.startCoins) roundCoins += 50;
   // Refill consumables from owned items
   consumables = {};
   if (owned.bomb) consumables.bomb = 3;
   if (owned.swap) consumables.swap = 3;
+  if (owned.slow) consumables.slow = 2;
+  if (owned.rainbow) consumables.rainbow = 2;
   shieldUsed = false;
+  slowUntil = 0;
+  forceRainbow = false;
   spawn();
   updateUI();
   renderItems();
@@ -466,6 +474,8 @@ function start() {
   document.getElementById("overlay").classList.add("hidden");
 }
 let shieldUsed = false;
+let slowUntil = 0;
+let forceRainbow = false;
 
 // Keyboard
 document.addEventListener("keydown", e => {
@@ -682,9 +692,13 @@ endGame = function() {
 const ITEMS = {
   bomb: { icon: "💣", name: "炸弹", desc: "消除最底下一行 · 每局给 3 个", price: 150, type: "consumable" },
   swap: { icon: "🔄", name: "重抽", desc: "换一个新方块 · 每局给 3 个", price: 100, type: "consumable" },
+  slow: { icon: "🐢", name: "慢动作", desc: "下落速度减半 5 秒 · 每局给 2 个", price: 200, type: "consumable" },
+  rainbow: { icon: "🌈", name: "彩虹方块", desc: "下个方块变 4 格 I 棒 · 每局给 2 个", price: 250, type: "consumable" },
   shield: { icon: "🛡️", name: "复活甲", desc: "Game Over 时复活一次", price: 500, type: "permanent" },
   doubleCoin: { icon: "⚡", name: "双倍金币", desc: "永久 2× 金币收入", price: 800, type: "permanent" },
   ghost: { icon: "🎯", name: "精准定位", desc: "幽灵方块更明亮", price: 100, type: "permanent" },
+  vision: { icon: "🔮", name: "透视眼", desc: "NEXT 显示 3 个方块", price: 300, type: "permanent" },
+  startCoins: { icon: "💎", name: "开局红包", desc: "每局开始送 50 金币", price: 600, type: "permanent" },
 };
 
 function renderShop() {
@@ -768,6 +782,14 @@ function useItem(k) {
   } else if (k === "swap") {
     current = randomPiece();
     sfx(440, 0.1, "square", 0.06);
+  } else if (k === "slow") {
+    slowUntil = Date.now() + 5000;
+    sfx(200, 0.3, "sine", 0.08);
+  } else if (k === "rainbow") {
+    forceRainbow = true;
+    sfx(660, 0.1, "square", 0.07);
+    setTimeout(() => sfx(880, 0.1, "square", 0.07), 50);
+    setTimeout(() => sfx(1100, 0.15, "square", 0.07), 100);
   }
   consumables[k]--;
   renderItems();
