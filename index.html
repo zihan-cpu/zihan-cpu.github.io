@@ -140,6 +140,7 @@
   </div>
   <div class="sidebar">
     <div class="panel"><div class="panel-label">SCORE</div><div class="panel-value" id="score">0</div></div>
+    <div class="panel"><div class="panel-label">🏆 HIGH</div><div class="panel-value" id="high" style="color:#ffe259;text-shadow:0 0 10px #ffa751;">0</div></div>
     <div class="panel"><div class="panel-label">💰 COINS</div><div class="panel-value" id="coins" style="color:#ffe259;text-shadow:0 0 10px #ffa751;">0</div></div>
     <div class="panel"><div class="panel-label">LEVEL</div><div class="panel-value" id="level">1</div></div>
     <div class="panel"><div class="panel-label">LINES</div><div class="panel-value" id="lines">0</div></div>
@@ -200,9 +201,14 @@ const nextCtx = nextCanvas.getContext("2d");
 
 let CELL = 28;
 function sizeBoard() {
-  const maxW = Math.min(window.innerWidth - 140, 320);
-  const cell = Math.floor(Math.min(maxW / COLS, (window.innerHeight - 280) / ROWS));
-  CELL = Math.max(18, cell);
+  // Reserve space: title (~50) + controls (~160) + items-bar (~50) + buttons (~50) + padding (~60)
+  const reservedH = 370;
+  const reservedW = window.innerWidth > 700 ? 240 : 140; // sidebar + padding
+  const availH = window.innerHeight - reservedH;
+  const availW = window.innerWidth - reservedW;
+  const cellH = Math.floor(availH / ROWS);
+  const cellW = Math.floor(availW / COLS);
+  CELL = Math.max(18, Math.min(cellH, cellW, 44));
   board.width = CELL * COLS;
   board.height = CELL * ROWS;
 }
@@ -393,7 +399,13 @@ function updateUI() {
   document.getElementById("level").textContent = level;
   document.getElementById("lines").textContent = lines;
   document.getElementById("coins").textContent = totalCoins + roundCoins;
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("tetris_high", highScore);
+  }
+  document.getElementById("high").textContent = highScore;
 }
+let highScore = parseInt(localStorage.getItem("tetris_high") || "0");
 
 // =========== COIN SYSTEM ===========
 let totalCoins = parseInt(localStorage.getItem("tetris_coins") || "0");
