@@ -208,7 +208,7 @@ function sizeBoard() {
   const availW = window.innerWidth - reservedW;
   const cellH = Math.floor(availH / ROWS);
   const cellW = Math.floor(availW / COLS);
-  CELL = Math.max(20, Math.min(cellH, cellW, 50));
+  CELL = Math.max(20, Math.min(cellH, cellW));
   board.width = CELL * COLS;
   board.height = CELL * ROWS;
 }
