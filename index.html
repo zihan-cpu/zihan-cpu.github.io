@@ -1221,6 +1221,149 @@ function updateMascot() {
 const _updateUIMascot = updateUI;
 updateUI = function() { _updateUIMascot(); updateMascot(); };
 
+// =========== COMBO + FX PANEL (right empty space) ===========
+let comboCount = 0;
+let lastClearTime = 0;
+let sessionCoins = 0;
+let sessionLines = 0;
+let sessionStart = Date.now();
+let bestCombo = parseInt(localStorage.getItem("bestCombo") || "0");
+
+const fxPanel = document.createElement("div");
+fxPanel.id = "fx-panel";
+fxPanel.style.cssText = `position:fixed;right:24px;top:200px;z-index:5;
+  width:220px;text-align:center;display:none;pointer-events:none;`;
+fxPanel.innerHTML = `
+  <div style="background:linear-gradient(135deg,rgba(0,255,255,0.1),rgba(255,0,255,0.1));
+    border:2px solid rgba(0,255,255,0.4);border-radius:14px;padding:14px;
+    backdrop-filter:blur(8px);box-shadow:0 0 20px rgba(0,255,255,0.15)">
+    <div style="color:#aaa;font-size:11px;letter-spacing:2px;margin-bottom:6px">COMBO</div>
+    <div id="fx-combo" style="font-size:42px;font-weight:900;color:#ff00ff;text-shadow:0 0 15px #ff00ff;line-height:1">×0</div>
+    <div style="height:1px;background:rgba(255,255,255,0.1);margin:10px 0"></div>
+    <div style="color:#aaa;font-size:10px;letter-spacing:2px">本局 LINES</div>
+    <div id="fx-lines" style="font-size:22px;font-weight:800;color:#00ffff;text-shadow:0 0 8px #00ffff">0</div>
+    <div style="height:6px"></div>
+    <div style="color:#aaa;font-size:10px;letter-spacing:2px">本局 💰</div>
+    <div id="fx-coins" style="font-size:22px;font-weight:800;color:#ffe259;text-shadow:0 0 8px #ffe259">0</div>
+    <div style="height:6px"></div>
+    <div style="color:#aaa;font-size:10px;letter-spacing:2px">PPS · LPM</div>
+    <div id="fx-rate" style="font-size:14px;font-weight:700;color:#fff">0.0 · 0</div>
+    <div style="height:6px"></div>
+    <div style="color:#aaa;font-size:10px;letter-spacing:2px">最高 COMBO</div>
+    <div id="fx-best" style="font-size:16px;font-weight:700;color:#ff66ff">×${bestCombo}</div>
+  </div>
+`;
+document.body.appendChild(fxPanel);
+
+const fxStyle = document.createElement("style");
+fxStyle.textContent = `
+  @media (min-width: 820px) { #fx-panel { display:block !important; } }
+  @keyframes fxPop {
+    0%   { transform: translate(-50%,-50%) scale(0.3); opacity: 0; }
+    20%  { transform: translate(-50%,-50%) scale(1.3); opacity: 1; }
+    60%  { transform: translate(-50%,-50%) scale(1.0); opacity: 1; }
+    100% { transform: translate(-50%,-150%) scale(0.8); opacity: 0; }
+  }
+  @keyframes comboShake {
+    0%,100% { transform: scale(1); }
+    50%     { transform: scale(1.4); filter: brightness(2); }
+  }
+  .fx-pop { animation: fxPop 1.4s ease-out forwards; }
+  .combo-shake { animation: comboShake 0.4s ease-out; }
+`;
+document.head.appendChild(fxStyle);
+
+function popText(html, color = "#ffe259", size = 56) {
+  const el = document.createElement("div");
+  el.className = "fx-pop";
+  el.style.cssText = `position:fixed;left:50%;top:45%;
+    color:${color};font-size:${size}px;font-weight:900;
+    text-shadow:0 0 20px ${color},0 0 40px ${color};
+    z-index:9000;pointer-events:none;font-family:'Press Start 2P',monospace;
+    white-space:nowrap;letter-spacing:2px`;
+  el.innerHTML = html;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+
+function updateFxPanel() {
+  if (window.innerWidth < 820) return;
+  document.getElementById("fx-combo").textContent = "×" + comboCount;
+  document.getElementById("fx-lines").textContent = sessionLines;
+  document.getElementById("fx-coins").textContent = sessionCoins;
+  document.getElementById("fx-best").textContent = "×" + bestCombo;
+  const elapsedMin = Math.max(0.05, (Date.now() - sessionStart) / 60000);
+  const lpm = Math.round(sessionLines / elapsedMin);
+  const pps = (sessionLines / (elapsedMin * 60)).toFixed(1);
+  document.getElementById("fx-rate").textContent = `${pps} · ${lpm}`;
+}
+setInterval(updateFxPanel, 500);
+
+// hook clearLines for combo + popups
+const _clearLinesFx = clearLines;
+clearLines = function() {
+  const before = lines;
+  const beforeCoins = totalCoins;
+  _clearLinesFx();
+  const cleared = lines - before;
+  if (cleared > 0) {
+    sessionLines += cleared;
+    const coinsGained = totalCoins - beforeCoins;
+    sessionCoins += coinsGained;
+    const now = Date.now();
+    if (now - lastClearTime < 3500) comboCount++;
+    else comboCount = 1;
+    lastClearTime = now;
+    if (comboCount > bestCombo) {
+      bestCombo = comboCount;
+      localStorage.setItem("bestCombo", bestCombo);
+    }
+    // popups
+    if (cleared === 4) {
+      popText("TETRIS!", "#00ffff", 72);
+      setTimeout(() => popText(`+${coinsGained} 💰`, "#ffe259", 44), 250);
+    } else if (cleared === 3) {
+      popText("TRIPLE!", "#ff00ff", 60);
+    } else if (cleared === 2) {
+      popText("DOUBLE!", "#ff8800", 50);
+    } else {
+      popText(`+${coinsGained} 💰`, "#ffe259", 36);
+    }
+    if (comboCount >= 2) {
+      setTimeout(() => popText(`COMBO ×${comboCount}!`, "#ff00ff", 48), 400);
+      const fxC = document.getElementById("fx-combo");
+      if (fxC) { fxC.classList.remove("combo-shake"); void fxC.offsetWidth; fxC.classList.add("combo-shake"); }
+    }
+    updateFxPanel();
+  }
+};
+
+// reset on new game
+if (typeof startGame === "function") {
+  const _startGameFx = startGame;
+  startGame = function() {
+    comboCount = 0;
+    sessionCoins = 0;
+    sessionLines = 0;
+    sessionStart = Date.now();
+    lastClearTime = 0;
+    _startGameFx();
+    updateFxPanel();
+  };
+}
+
+// reset combo on game over
+const _endGameFx = endGame;
+endGame = function() {
+  if (sessionCoins > 0 || sessionLines > 0) {
+    setTimeout(() => popText(`本局 +${sessionCoins} 💰`, "#ffe259", 38), 1200);
+  }
+  comboCount = 0;
+  _endGameFx();
+};
+
+updateFxPanel();
+
 // Initial state
 grid = newGrid();
 score = 0; level = 1; lines = 0;
