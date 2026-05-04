@@ -522,9 +522,22 @@ board.addEventListener("touchend", e => {
 
 // Start button — bind both touch and click
 const startBtn = document.getElementById("overlay-btn");
-function doStart(e) { if (e) e.preventDefault(); initAudio(); startMusic(); start(); }
+let startGuard = false;
+function doStart(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  if (startGuard) return;
+  startGuard = true;
+  setTimeout(() => startGuard = false, 500);
+  try { initAudio(); startMusic(); } catch(err) {}
+  start();
+}
+startBtn.addEventListener("touchstart", doStart, {passive:false});
+startBtn.addEventListener("touchend", doStart, {passive:false});
 startBtn.addEventListener("click", doStart);
-startBtn.addEventListener("touchend", doStart);
+startBtn.addEventListener("pointerdown", doStart);
+// Also accept any tap on the overlay itself
+const overlay = document.getElementById("overlay");
+overlay.addEventListener("touchend", e => { if (gameOver) doStart(e); });
 
 // =========== MUSIC: Korobeiniki Tetris Theme ===========
 let audioCtx = null;
