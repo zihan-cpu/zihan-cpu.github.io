@@ -923,6 +923,233 @@ draw = function() {
   }
 };
 
+// =========== BOSS BATTLE 🐲 ===========
+const BOSSES = [
+  { emoji: "🐛", name: "史莱姆", hp: 5,  reward: 200,   time: 60, color: "#7fff7f" },
+  { emoji: "🦂", name: "毒蝎",   hp: 10, reward: 500,   time: 60, color: "#ffaa44" },
+  { emoji: "🐉", name: "火龙",   hp: 20, reward: 1000,  time: 60, color: "#ff5555" },
+  { emoji: "👹", name: "恶魔",   hp: 35, reward: 2500,  time: 70, color: "#aa00ff" },
+  { emoji: "👑", name: "魔王",   hp: 60, reward: 10000, time: 90, color: "#ffd700" },
+];
+let bossIndex = 0;
+let bossActive = false;
+let bossHp = 0;
+let bossMaxHp = 0;
+let bossTimer = 0;
+let bossInterval = null;
+let linesUntilBoss = 50;
+let totalLinesAll = parseInt(localStorage.getItem("totalLinesAll") || "0");
+let bossDefeated = JSON.parse(localStorage.getItem("bossDefeated") || "[]");
+
+// BOSS UI
+const bossUI = document.createElement("div");
+bossUI.id = "boss-ui";
+bossUI.style.cssText = `position:fixed;top:0;left:0;right:0;z-index:50;display:none;
+  background:linear-gradient(180deg,rgba(0,0,0,0.95),rgba(40,0,40,0.85));
+  padding:14px 12px;border-bottom:3px solid #ff00ff;
+  box-shadow:0 0 30px #ff00ff;text-align:center;`;
+bossUI.innerHTML = `
+  <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap">
+    <div id="boss-emoji" style="font-size:48px;animation:bossShake 0.5s infinite"></div>
+    <div style="flex:1;min-width:180px;max-width:400px">
+      <div id="boss-name" style="color:#fff;font-size:18px;font-weight:bold;text-shadow:0 0 8px #ff00ff"></div>
+      <div style="background:#220022;border:2px solid #ff00ff;border-radius:8px;height:22px;margin:6px 0;overflow:hidden;position:relative">
+        <div id="boss-hp-bar" style="height:100%;background:linear-gradient(90deg,#ff0044,#ff8800);transition:width 0.3s;width:100%"></div>
+        <div id="boss-hp-text" style="position:absolute;inset:0;color:#fff;font-weight:bold;font-size:13px;line-height:22px;text-shadow:0 0 4px #000"></div>
+      </div>
+      <div id="boss-time" style="color:#ffaa00;font-size:14px;font-weight:bold"></div>
+    </div>
+  </div>
+`;
+document.body.appendChild(bossUI);
+
+const bossStyle = document.createElement("style");
+bossStyle.textContent = `
+  @keyframes bossShake { 0%,100%{transform:translate(0,0) rotate(0)} 25%{transform:translate(-4px,2px) rotate(-3deg)} 75%{transform:translate(4px,-2px) rotate(3deg)} }
+  @keyframes bossHit { 0%{transform:scale(1)} 50%{transform:scale(1.4);filter:brightness(2)} 100%{transform:scale(1)} }
+  @keyframes bossDie { 0%{transform:scale(1) rotate(0);opacity:1} 100%{transform:scale(0) rotate(720deg);opacity:0} }
+  .boss-hit { animation:bossHit 0.4s ease-out }
+  .boss-die { animation:bossDie 1.2s ease-in forwards }
+`;
+document.head.appendChild(bossStyle);
+
+function showBossToast(html, ms = 3000) {
+  const t = document.createElement("div");
+  t.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:linear-gradient(135deg,#1a0033,#330044);color:#fff;padding:24px 32px;
+    border:3px solid #ff00ff;border-radius:16px;z-index:9999;font-size:22px;text-align:center;
+    box-shadow:0 0 40px #ff00ff;font-weight:bold;animation:bossHit 0.5s`;
+  t.innerHTML = html;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.transition = "opacity 0.5s"; t.style.opacity = "0"; }, ms - 500);
+  setTimeout(() => t.remove(), ms);
+}
+
+function startBoss() {
+  if (bossActive || gameOver) return;
+  const b = BOSSES[bossIndex];
+  bossActive = true;
+  bossHp = b.hp;
+  bossMaxHp = b.hp;
+  bossTimer = b.time;
+  document.getElementById("boss-emoji").textContent = b.emoji;
+  document.getElementById("boss-name").textContent = `BOSS 战!${b.name} 出现了!`;
+  updateBossUI();
+  bossUI.style.display = "block";
+  showBossToast(`⚠️ BOSS 来了!⚠️<br>${b.emoji} <span style="color:${b.color}">${b.name}</span><br><span style="font-size:14px;color:#ffaa00">消行打它,${b.time}秒内打死!</span>`, 2500);
+  if (audioCtx) {
+    [200, 150, 100].forEach((f, i) => setTimeout(() => sfx(f, 0.4, "sawtooth", 0.12), i * 200));
+  }
+  if (bossInterval) clearInterval(bossInterval);
+  bossInterval = setInterval(() => {
+    if (gameOver || !bossActive) return;
+    bossTimer--;
+    updateBossUI();
+    if (bossTimer <= 0) bossWin();
+    // 火龙+ 加速效果(模拟反击 - 每10秒插一行垃圾)
+    if (bossIndex >= 1 && bossTimer > 0 && bossTimer % 15 === 0) {
+      injectGarbageRow();
+    }
+  }, 1000);
+}
+
+function updateBossUI() {
+  const pct = Math.max(0, (bossHp / bossMaxHp) * 100);
+  document.getElementById("boss-hp-bar").style.width = pct + "%";
+  document.getElementById("boss-hp-text").textContent = `${bossHp} / ${bossMaxHp} ❤️`;
+  document.getElementById("boss-time").textContent = `⏱️ ${bossTimer}s`;
+}
+
+function bossDamage(n) {
+  if (!bossActive) return;
+  bossHp -= n;
+  document.getElementById("boss-emoji").classList.remove("boss-hit");
+  void document.getElementById("boss-emoji").offsetWidth;
+  document.getElementById("boss-emoji").classList.add("boss-hit");
+  if (audioCtx) sfx(880 + n * 50, 0.1, "square", 0.1);
+  if (bossHp <= 0) bossLose();
+  else updateBossUI();
+}
+
+function bossLose() {
+  // 玩家赢
+  const b = BOSSES[bossIndex];
+  bossActive = false;
+  if (bossInterval) { clearInterval(bossInterval); bossInterval = null; }
+  document.getElementById("boss-emoji").classList.add("boss-die");
+  setTimeout(() => { bossUI.style.display = "none"; document.getElementById("boss-emoji").classList.remove("boss-die","boss-hit"); }, 1200);
+  const reward = b.reward * (owned.doubleCoin ? 2 : 1);
+  totalCoins += reward;
+  saveCoins();
+  if (!bossDefeated.includes(bossIndex)) {
+    bossDefeated.push(bossIndex);
+    localStorage.setItem("bossDefeated", JSON.stringify(bossDefeated));
+  }
+  let extra = "";
+  if (bossIndex === 4) extra = `<br>🏆 <span style="color:#ffd700">魔王征服者称号 GET!</span>`;
+  showBossToast(`🎉 击败 ${b.emoji} ${b.name}!<br>+${reward} 💰${extra}`, 3500);
+  if (audioCtx) [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => sfx(f, 0.2, "square", 0.1), i * 100));
+  bossIndex = Math.min(bossIndex + 1, BOSSES.length - 1);
+  linesUntilBoss = 50;
+  updateUI();
+}
+
+function bossWin() {
+  // BOSS 反击
+  const b = BOSSES[bossIndex];
+  bossActive = false;
+  if (bossInterval) { clearInterval(bossInterval); bossInterval = null; }
+  bossUI.style.display = "none";
+  showBossToast(`💀 ${b.emoji} ${b.name} 反击了!<br><span style="color:#ff5555">棋盘塞满垃圾行</span>`, 2500);
+  if (audioCtx) [400, 300, 200, 100].forEach((f, i) => setTimeout(() => sfx(f, 0.3, "sawtooth", 0.12), i * 150));
+  // 注入 4 行垃圾
+  for (let i = 0; i < 4; i++) injectGarbageRow();
+  linesUntilBoss = 50;
+}
+
+function injectGarbageRow() {
+  if (gameOver) return;
+  // 顶行掉了,其它上移一行,最底加一行带洞的垃圾
+  for (let r = 0; r < ROWS - 1; r++) {
+    grid[r] = grid[r + 1];
+  }
+  const hole = Math.floor(Math.random() * COLS);
+  const row = [];
+  for (let c = 0; c < COLS; c++) row.push(c === hole ? 0 : "L");
+  grid[ROWS - 1] = row;
+  // 检查是否顶到玩家
+  draw();
+}
+
+// hook clearLines
+const _clearLinesBoss = clearLines;
+clearLines = function() {
+  const before = lines;
+  _clearLinesBoss();
+  const cleared = lines - before;
+  if (cleared > 0) {
+    totalLinesAll += cleared;
+    localStorage.setItem("totalLinesAll", totalLinesAll);
+    if (bossActive) {
+      bossDamage(cleared);
+    } else {
+      linesUntilBoss -= cleared;
+      if (linesUntilBoss <= 0) {
+        setTimeout(() => startBoss(), 600);
+      }
+      updateUI();
+    }
+  }
+};
+
+// hook updateUI to show BOSS progress
+const _updateUIBoss = updateUI;
+updateUI = function() {
+  _updateUIBoss();
+  // 找一个地方塞 BOSS 进度
+  let el = document.getElementById("boss-progress");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "boss-progress";
+    el.style.cssText = "color:#ff66ff;font-size:13px;margin-top:6px;text-align:center;text-shadow:0 0 6px #ff00ff";
+    const target = document.querySelector(".side") || document.querySelector(".panel") || document.body;
+    target.appendChild(el);
+  }
+  if (bossActive) {
+    el.textContent = "";
+  } else {
+    const next = BOSSES[bossIndex];
+    el.innerHTML = `下个 BOSS: ${next.emoji} ${next.name} · 还差 <b>${Math.max(0,linesUntilBoss)}</b> 行`;
+  }
+};
+
+// hook endGame to clear boss
+const _endGameBoss = endGame;
+endGame = function() {
+  if (bossActive) {
+    bossActive = false;
+    if (bossInterval) { clearInterval(bossInterval); bossInterval = null; }
+    bossUI.style.display = "none";
+  }
+  _endGameBoss();
+};
+
+// hook startGame reset
+if (typeof startGame === "function") {
+  const _startGameBoss = startGame;
+  startGame = function() {
+    bossActive = false;
+    if (bossInterval) { clearInterval(bossInterval); bossInterval = null; }
+    bossUI.style.display = "none";
+    linesUntilBoss = 50;
+    _startGameBoss();
+    updateUI();
+  };
+}
+
+// 添加 L 颜色(垃圾行用灰色)
+if (typeof COLORS !== "undefined" && !COLORS.L) COLORS.L = "#666666";
+
 // Initial state
 grid = newGrid();
 score = 0; level = 1; lines = 0;
