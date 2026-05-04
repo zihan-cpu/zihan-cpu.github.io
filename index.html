@@ -127,7 +127,11 @@
 </head>
 <body>
 
-<h1>TETRIS</h1>
+<div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
+  <h1 style="margin:0;">TETRIS</h1>
+  <button id="btn-music" style="padding:6px 12px;background:rgba(0,255,255,0.15);border:1px solid #00ffff;color:#fff;border-radius:8px;font-family:inherit;cursor:pointer;font-size:0.85em;">🔊</button>
+  <button id="btn-shop" style="padding:6px 12px;background:rgba(255,226,89,0.15);border:1px solid #ffe259;color:#fff;border-radius:8px;font-family:inherit;cursor:pointer;font-size:0.85em;font-weight:700;">🛒 商店</button>
+</div>
 
 <div class="game-wrap">
   <div class="board-wrap">
@@ -159,8 +163,6 @@
 
 <div class="hint">键盘:← → ↓ 移动 · ↑ 旋转 · 空格 硬降 · P 暂停 · M 静音</div>
 <div style="display:flex;gap:8px;margin-top:10px;">
-  <button id="btn-music" style="padding:8px 16px;background:rgba(0,255,255,0.15);border:1px solid #00ffff;color:#fff;border-radius:8px;font-family:inherit;cursor:pointer;font-size:0.9em;">🔊 Music: ON</button>
-  <button id="btn-shop" style="padding:8px 16px;background:rgba(255,226,89,0.15);border:1px solid #ffe259;color:#fff;border-radius:8px;font-family:inherit;cursor:pointer;font-size:0.9em;">🛒 商店</button>
 </div>
 
 <div id="items-bar" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;justify-content:center;min-height:40px;"></div>
