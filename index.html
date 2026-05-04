@@ -67,6 +67,36 @@
     grid-template-rows: 70px 70px;
     gap: 8px;
   }
+  /* iPad / 大屏:把控制按钮固定到屏幕左右下角,拇指够得着 */
+  @media (min-width: 820px) {
+    .controls {
+      display: contents; /* 子按钮自由定位 */
+    }
+    .ctrl-btn {
+      position: fixed;
+      width: 78px; height: 78px;
+      z-index: 30;
+      backdrop-filter: blur(6px);
+      background: rgba(0,255,255,0.12) !important;
+      border: 2px solid rgba(0,255,255,0.5) !important;
+      box-shadow: 0 0 20px rgba(0,255,255,0.2);
+    }
+    /* 左手 D-pad — 屏幕左下 */
+    #btn-left   { left: 30px;  bottom: 100px; }
+    #btn-down   { left: 118px; bottom: 30px;  }
+    #btn-right  { left: 206px; bottom: 100px; }
+    /* 右手动作 — 屏幕右下 */
+    #btn-rotate { right: 130px; bottom: 110px; width:90px; height:90px; font-size:2em; }
+    #btn-drop   {
+      right: 30px; bottom: 30px;
+      width: 130px; height: 130px;
+      font-size: 1.3em !important;
+      background: rgba(255,0,255,0.25) !important;
+      border-color: #ff00ff !important;
+      box-shadow: 0 0 30px rgba(255,0,255,0.5) !important;
+      border-radius: 50% !important;
+    }
+  }
   .ctrl-btn {
     background: rgba(255,255,255,0.08);
     border: 2px solid rgba(0,255,255,0.4);
