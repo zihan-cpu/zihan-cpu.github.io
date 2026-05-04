@@ -413,6 +413,75 @@ let highScore = parseInt(localStorage.getItem("tetris_high") || "0");
 
 // =========== COIN SYSTEM ===========
 let totalCoins = parseInt(localStorage.getItem("tetris_coins") || "0");
+
+// =========== DAILY LOGIN BONUS ===========
+function checkDailyBonus() {
+  const today = new Date().toDateString();
+  const lastLogin = localStorage.getItem("tetris_last_login");
+  let streak = parseInt(localStorage.getItem("tetris_streak") || "0");
+  if (lastLogin === today) return null; // already claimed today
+
+  // Check if streak continues (yesterday) or resets
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (lastLogin === yesterday) streak++;
+  else streak = 1; // reset to day 1
+
+  // Reward by streak day
+  const rewards = [50, 80, 120, 180, 250, 350, 500];
+  const dayIdx = Math.min(streak - 1, 6);
+  const reward = rewards[dayIdx];
+
+  totalCoins += reward;
+  localStorage.setItem("tetris_last_login", today);
+  localStorage.setItem("tetris_streak", streak);
+  return { day: streak, reward, isMax: streak >= 7 };
+}
+
+function showDailyPopup(bonus) {
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  `;
+  const dayLabels = ["第 1 天", "第 2 天", "第 3 天", "第 4 天", "第 5 天", "第 6 天", "第 7 天 🏆"];
+  popup.innerHTML = `
+    <div style="background:linear-gradient(135deg,#2a1850,#1a0830);border:2px solid #ffe259;border-radius:20px;padding:30px;max-width:340px;text-align:center;box-shadow:0 0 50px rgba(255,226,89,0.5);">
+      <div style="font-size:3em;margin-bottom:8px;">🎁</div>
+      <h2 style="background:linear-gradient(90deg,#ffe259,#ffa751);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:1.5em;margin-bottom:8px;letter-spacing:2px;">每日登录奖励</h2>
+      <div style="opacity:0.85;margin-bottom:16px;">连续登录第 ${bonus.day} 天 ${bonus.isMax ? "🔥" : ""}</div>
+      <div style="font-size:2.2em;font-weight:900;color:#ffe259;text-shadow:0 0 20px #ffa751;margin-bottom:16px;">+${bonus.reward} 💰</div>
+      <div style="display:flex;gap:4px;justify-content:center;margin-bottom:18px;flex-wrap:wrap;">
+        ${[50,80,120,180,250,350,500].map((r, i) => {
+          const claimed = i < bonus.day;
+          const today = i === bonus.day - 1;
+          return `<div style="padding:6px 8px;border-radius:6px;font-size:0.7em;font-weight:700;
+            background:${today ? "linear-gradient(90deg,#ffe259,#ffa751)" : (claimed ? "rgba(0,255,136,0.2)" : "rgba(255,255,255,0.05)")};
+            color:${today ? "#000" : (claimed ? "#00ff88" : "#fff")};
+            border:1px solid ${today ? "#ffe259" : (claimed ? "#00ff88" : "rgba(255,255,255,0.2)")};
+            min-width:38px;
+            ">D${i+1}<br>${r}</div>`;
+        }).join("")}
+      </div>
+      <button id="daily-close" style="padding:12px 28px;background:linear-gradient(90deg,#00ffff,#ff00ff);color:#000;border:none;border-radius:10px;font-weight:800;font-size:1em;letter-spacing:2px;cursor:pointer;font-family:inherit;">领取</button>
+    </div>
+  `;
+  document.body.appendChild(popup);
+  const close = (e) => { if (e) e.preventDefault(); popup.remove(); saveData(); updateUI && updateUI(); };
+  popup.querySelector("#daily-close").addEventListener("click", close);
+  popup.querySelector("#daily-close").addEventListener("touchend", close);
+  // celebratory sound
+  setTimeout(() => {
+    [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => {
+      if (typeof sfx === 'function') sfx(f, 0.2, "square", 0.08);
+    }, i * 80));
+  }, 200);
+}
+
+// Check on page load
+setTimeout(() => {
+  const bonus = checkDailyBonus();
+  if (bonus) showDailyPopup(bonus);
+}, 500);
 let roundCoins = 0;
 let owned = JSON.parse(localStorage.getItem("tetris_owned") || "{}");
 let consumables = {}; // per-round consumable counts
