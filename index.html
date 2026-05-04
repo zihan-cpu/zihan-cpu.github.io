@@ -1259,10 +1259,12 @@ const fxStyle = document.createElement("style");
 fxStyle.textContent = `
   @media (min-width: 820px) { #fx-panel { display:block !important; } }
   @keyframes fxPop {
-    0%   { transform: translate(-50%,-50%) scale(0.3); opacity: 0; }
-    20%  { transform: translate(-50%,-50%) scale(1.3); opacity: 1; }
-    60%  { transform: translate(-50%,-50%) scale(1.0); opacity: 1; }
-    100% { transform: translate(-50%,-150%) scale(0.8); opacity: 0; }
+    0%   { transform: translate(-50%,-50%) scale(0.1) rotate(-15deg); opacity: 0; }
+    15%  { transform: translate(-50%,-50%) scale(1.6) rotate(5deg); opacity: 1; }
+    30%  { transform: translate(-50%,-50%) scale(0.9) rotate(-3deg); opacity: 1; }
+    45%  { transform: translate(-50%,-50%) scale(1.15) rotate(2deg); opacity: 1; }
+    65%  { transform: translate(-50%,-50%) scale(1.0) rotate(0); opacity: 1; }
+    100% { transform: translate(-50%,-180%) scale(0.7) rotate(0); opacity: 0; }
   }
   @keyframes comboShake {
     0%,100% { transform: scale(1); }
@@ -1277,13 +1279,70 @@ function popText(html, color = "#ffe259", size = 56) {
   const el = document.createElement("div");
   el.className = "fx-pop";
   el.style.cssText = `position:fixed;left:50%;top:45%;
-    color:${color};font-size:${size}px;font-weight:900;
-    text-shadow:0 0 20px ${color},0 0 40px ${color};
+    color:#fff;font-size:${size}px;font-weight:900;
+    background:linear-gradient(135deg,${color},#fff,${color});
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    text-shadow:0 0 20px ${color},0 0 40px ${color},0 0 60px ${color};
     z-index:9000;pointer-events:none;font-family:'Press Start 2P',monospace;
-    white-space:nowrap;letter-spacing:2px`;
+    white-space:nowrap;letter-spacing:3px;
+    filter:drop-shadow(0 4px 8px ${color})`;
   el.innerHTML = html;
   document.body.appendChild(el);
+  // screen shake on big events
+  if (size >= 60) shakeScreen(size >= 70 ? 12 : 6);
   setTimeout(() => el.remove(), 1500);
+}
+
+function spawnParticles(cx, cy, color, count = 30) {
+  const colors = [color, "#ffffff", "#ffe259", "#00ffff", "#ff00ff"];
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement("div");
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+    const dist = 80 + Math.random() * 220;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist - 40;
+    const sz = 4 + Math.random() * 8;
+    const c = colors[Math.floor(Math.random() * colors.length)];
+    p.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;
+      width:${sz}px;height:${sz}px;border-radius:50%;
+      background:${c};box-shadow:0 0 ${sz*2}px ${c};
+      pointer-events:none;z-index:8999;
+      transition:transform 1.1s cubic-bezier(.2,.7,.3,1),opacity 1.1s ease-out;
+      transform:translate(-50%,-50%)`;
+    document.body.appendChild(p);
+    requestAnimationFrame(() => {
+      p.style.transform = `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(0.2)`;
+      p.style.opacity = "0";
+    });
+    setTimeout(() => p.remove(), 1200);
+  }
+}
+
+function shakeScreen(intensity = 8) {
+  const root = document.body;
+  let t = 0;
+  const tick = () => {
+    t++;
+    if (t > 6) { root.style.transform = ""; return; }
+    const x = (Math.random() - 0.5) * intensity * 2;
+    const y = (Math.random() - 0.5) * intensity * 2;
+    root.style.transform = `translate(${x}px,${y}px)`;
+    setTimeout(tick, 50);
+  };
+  tick();
+}
+
+function fireworks(x, y) {
+  // 3 bursts of fireworks
+  const colors = ["#ff00ff", "#00ffff", "#ffe259", "#ff4488", "#88ff44"];
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => {
+      const c = colors[Math.floor(Math.random() * colors.length)];
+      const fx = x + (Math.random() - 0.5) * 300;
+      const fy = y + (Math.random() - 0.5) * 200;
+      spawnParticles(fx, fy, c, 28);
+    }, i * 200);
+  }
 }
 
 function updateFxPanel() {
@@ -1319,15 +1378,26 @@ clearLines = function() {
       localStorage.setItem("bestCombo", bestCombo);
     }
     // popups
+    const cx = window.innerWidth / 2, cy = window.innerHeight * 0.45;
     if (cleared === 4) {
-      popText("TETRIS!", "#00ffff", 72);
-      setTimeout(() => popText(`+${coinsGained} 💰`, "#ffe259", 44), 250);
+      popText("TETRIS!", "#00ffff", 84);
+      // 满屏烟花
+      for (let i = 0; i < 8; i++) {
+        setTimeout(() => fireworks(
+          200 + Math.random() * (window.innerWidth - 400),
+          150 + Math.random() * (window.innerHeight - 400)
+        ), i * 120);
+      }
+      setTimeout(() => popText(`+${coinsGained} 💰`, "#ffe259", 50), 350);
     } else if (cleared === 3) {
-      popText("TRIPLE!", "#ff00ff", 60);
+      popText("TRIPLE!", "#ff00ff", 68);
+      spawnParticles(cx, cy, "#ff00ff", 90); // 3 行 = 90 颗
     } else if (cleared === 2) {
-      popText("DOUBLE!", "#ff8800", 50);
+      popText("DOUBLE!", "#ff8800", 56);
+      spawnParticles(cx, cy, "#ff8800", 60); // 2 行 = 60 颗
     } else {
-      popText(`+${coinsGained} 💰`, "#ffe259", 36);
+      popText(`+${coinsGained} 💰`, "#ffe259", 40);
+      spawnParticles(cx, cy, "#ffe259", 30); // 1 行 = 30 颗
     }
     if (comboCount >= 2) {
       setTimeout(() => popText(`COMBO ×${comboCount}!`, "#ff00ff", 48), 400);
