@@ -537,28 +537,40 @@ function initAudio() {
   if (audioCtx.state === "suspended") audioCtx.resume();
 }
 
-const N = {
-  E4:329.63, F4:349.23, G4:392, A4:440, B4:493.88,
-  C5:523.25, D5:587.33, E5:659.25, F5:698.46, G5:783.99, A5:880, B5:987.77,
-  GS4:415.30, REST: 0,
-  E3:164.81, A3:220, GS3:207.65, D3:146.83, C4:261.63
-};
+const N = {};
+(function() {
+  const names = ["C","CS","D","DS","E","F","FS","G","GS","A","AS","B"];
+  for (let oct = 2; oct <= 6; oct++)
+    for (let i = 0; i < 12; i++) {
+      const midi = 12 + oct * 12 + i;
+      N[names[i] + oct] = 440 * Math.pow(2, (midi - 69) / 12);
+    }
+  N.REST = 0;
+})();
 
+// Megaman-style 8-bit battle theme — A minor, fast 16ths, 136 BPM
 const MELODY = [
-  ["E5",2],["B4",1],["C5",1],["D5",2],["C5",1],["B4",1],
-  ["A4",2],["A4",1],["C5",1],["E5",2],["D5",1],["C5",1],
-  ["B4",3],["C5",1],["D5",2],["E5",2],
-  ["C5",2],["A4",2],["A4",2],["REST",2],
-  ["D5",3],["F5",1],["A5",2],["G5",1],["F5",1],
-  ["E5",3],["C5",1],["E5",2],["D5",1],["C5",1],
-  ["B4",2],["B4",1],["C5",1],["D5",2],["E5",2],
-  ["C5",2],["A4",2],["A4",2],["REST",2],
+  // Intro hook
+  ["A4",2],["E5",2],["A5",2],["E5",2],["G5",2],["E5",2],["C5",2],["A4",2],
+  ["A4",2],["E5",2],["A5",2],["E5",2],["B5",2],["A5",2],["G5",2],["E5",2],
+  // Verse A
+  ["F5",2],["E5",2],["D5",2],["E5",2],["F5",2],["G5",2],["A5",4],
+  ["G5",2],["F5",2],["E5",2],["F5",2],["G5",2],["E5",2],["C5",4],
+  // Verse B
+  ["A4",2],["C5",2],["E5",2],["A5",2],["G5",4],["E5",2],["C5",2],
+  ["D5",2],["E5",2],["F5",2],["E5",2],["D5",2],["C5",2],["B4",4],
+  // Outro hook
+  ["A4",2],["E5",2],["A5",2],["E5",2],["A5",2],["B5",2],["C6",4],
+  ["B5",2],["A5",2],["G5",2],["F5",2],["E5",2],["D5",2],["C5",2],["A4",2],
 ];
+
 const BASS = [
-  ["E3",4],["A3",4],["GS3",4],["E3",4],
-  ["A3",4],["E3",4],["A3",2],["E3",2],["A3",4],
-  ["D3",4],["A3",4],["C4",4],["E3",4],
-  ["A3",4],["GS3",4],["A3",4],["E3",4],
+  ["A2",4],["A2",4],["A2",4],["A2",4],
+  ["A2",4],["A2",4],["G2",4],["G2",4],
+  ["F2",4],["F2",4],["E2",4],["E2",4],
+  ["F2",4],["G2",4],["A2",4],["A2",4],
+  ["A2",4],["A2",4],["G2",4],["F2",4],
+  ["E2",4],["E2",4],["A2",4],["A2",4],
 ];
 
 function playNote(freq, t, dur, type, vol) {
@@ -568,10 +580,36 @@ function playNote(freq, t, dur, type, vol) {
   osc.type = type; osc.frequency.value = freq;
   osc.connect(gain); gain.connect(audioCtx.destination);
   gain.gain.setValueAtTime(0, t);
-  gain.gain.linearRampToValueAtTime(vol, t + 0.01);
-  gain.gain.linearRampToValueAtTime(vol * 0.7, t + dur * 0.7);
+  gain.gain.linearRampToValueAtTime(vol, t + 0.005);
+  gain.gain.setValueAtTime(vol, t + dur - 0.04);
   gain.gain.linearRampToValueAtTime(0, t + dur);
-  osc.start(t); osc.stop(t + dur);
+  osc.start(t); osc.stop(t + dur + 0.02);
+}
+
+function playKick(t) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(120, t);
+  osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+  gain.gain.setValueAtTime(0.15, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(t); osc.stop(t + 0.18);
+}
+function playSnare(t) {
+  if (!audioCtx) return;
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const noise = audioCtx.createBufferSource(); noise.buffer = buf;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = "highpass"; filter.frequency.value = 1500;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.08, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+  noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+  noise.start(t); noise.stop(t + 0.1);
 }
 
 function startMusic() {
@@ -582,21 +620,36 @@ function startMusic() {
 
 function scheduleLoop() {
   if (!musicEnabled || !audioCtx) { musicPlaying = false; return; }
-  const beat = 0.18;
+  const sx = 0.11; // 16th note duration → ~136 BPM
   const start = audioCtx.currentTime + 0.05;
   let mt = start;
   for (const [n, b] of MELODY) {
-    const dur = b * beat;
-    if (n !== "REST" && N[n]) playNote(N[n], mt, dur * 0.95, "square", 0.07);
+    const dur = b * sx;
+    if (n !== "REST" && N[n]) playNote(N[n], mt, dur * 0.92, "square", 0.06);
     mt += dur;
   }
-  let bt = start;
-  for (const [n, b] of BASS) {
-    const dur = b * beat;
-    if (N[n]) playNote(N[n], bt, dur * 0.95, "triangle", 0.06);
-    bt += dur;
-  }
   const total = mt - start;
+  // BASS — looping
+  let bt = start;
+  while (bt < mt) {
+    for (const [n, b] of BASS) {
+      const dur = b * sx;
+      if (bt + dur > mt) break;
+      if (N[n]) playNote(N[n], bt, dur * 0.95, "triangle", 0.06);
+      bt += dur;
+    }
+  }
+  // DRUMS — kick on 1&3, snare on 2&4 of each beat (16ths grid)
+  let dt = start;
+  while (dt < mt) {
+    for (let i = 0; i < 16; i++) {
+      const tt = dt + i * sx;
+      if (tt >= mt) break;
+      if (i === 0 || i === 8) playKick(tt);
+      if (i === 4 || i === 12) playSnare(tt);
+    }
+    dt += 16 * sx;
+  }
   musicTimers.push(setTimeout(scheduleLoop, total * 1000 - 50));
 }
 
