@@ -797,29 +797,55 @@ function draw() {
       ctx.textAlign = 'center';
       ctx.fillText(d.type === 'board' ? '🛹' : '🚀', p.x, cy + 12 * p.scale);
     } else {
-      const w = 110 * p.scale, h = 130 * p.scale;
+      const w = 160 * p.scale, h = 130 * p.scale;
       if (d.type === 'train') {
-        ctx.fillStyle = '#ff3344';
-        const th = 200 * p.scale;
-        roundRect(p.x - w/2, p.y - th, w, th, 10 * p.scale);
+        // 🚆 RED TRAIN — switch lane
+        ctx.fillStyle = '#ff1144';
+        const th = 280 * p.scale;
+        roundRect(p.x - w/2, p.y - th, w, th, 12 * p.scale);
         ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 4 * p.scale; ctx.stroke();
+        // windows
         ctx.fillStyle = '#fff';
-        ctx.fillRect(p.x - w/3, p.y - th + 20 * p.scale, w*0.66, 30 * p.scale);
-        ctx.fillStyle = 'rgba(255,200,200,0.9)';
-        ctx.fillRect(p.x - w/3, p.y - th + 60 * p.scale, w*0.66, 25 * p.scale);
+        ctx.fillRect(p.x - w/3, p.y - th + 20 * p.scale, w*0.66, 38 * p.scale);
+        ctx.fillStyle = 'rgba(255,220,220,0.95)';
+        ctx.fillRect(p.x - w/3, p.y - th + 75 * p.scale, w*0.66, 32 * p.scale);
+        // warning emoji
+        ctx.font = `bold ${56 * p.scale}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('🚆', p.x, p.y - th/2 + 20 * p.scale);
       } else if (d.type === 'high') {
+        // 🟠 LOW BAR — jump over
         ctx.fillStyle = '#ffaa00';
-        roundRect(p.x - w/2, p.y - 60 * p.scale, w, 35 * p.scale, 6 * p.scale);
+        roundRect(p.x - w/2, p.y - 75 * p.scale, w, 45 * p.scale, 8 * p.scale);
         ctx.fill();
-        ctx.strokeStyle = '#000'; ctx.lineWidth = 2 * p.scale; ctx.stroke();
-      } else {
-        ctx.fillStyle = '#ff66ff';
-        roundRect(p.x - w/2, p.y - 80 * p.scale, w, 65 * p.scale, 6 * p.scale);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
-        for (let s = 0; s < 3; s++) {
-          ctx.fillRect(p.x - w/2 + 10*p.scale + s*30*p.scale, p.y - 70*p.scale, 6*p.scale, 45*p.scale);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 4 * p.scale; ctx.stroke();
+        // hazard stripes
+        ctx.fillStyle = '#000';
+        for (let s = 0; s < 5; s++) {
+          ctx.fillRect(p.x - w/2 + s * 35 * p.scale, p.y - 75 * p.scale, 12 * p.scale, 45 * p.scale);
         }
+        // arrow up
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${30 * p.scale}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('⬆ JUMP', p.x, p.y - 90 * p.scale);
+      } else {
+        // 💗 HIGH BAR — slide under
+        ctx.fillStyle = '#ff44cc';
+        roundRect(p.x - w/2, p.y - 110 * p.scale, w, 80 * p.scale, 8 * p.scale);
+        ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3 * p.scale; ctx.stroke();
+        // legs
+        ctx.fillStyle = '#fff';
+        for (let s = 0; s < 4; s++) {
+          ctx.fillRect(p.x - w/2 + 12*p.scale + s*40*p.scale, p.y - 95*p.scale, 8*p.scale, 60*p.scale);
+        }
+        // arrow down
+        ctx.fillStyle = '#000';
+        ctx.font = `bold ${30 * p.scale}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('⬇ SLIDE', p.x, p.y - 125 * p.scale);
       }
     }
   });
