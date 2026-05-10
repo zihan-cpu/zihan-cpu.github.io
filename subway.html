@@ -490,7 +490,8 @@ tz.addEventListener('click', () => { if (running) jump(); });
 // ======== SPAWN ========
 function spawn() {
   const used = new Set();
-  const obsCount = 1 + Math.floor(Math.random() * 2);
+  // 70% chance of just 1 obstacle, 30% chance of 2
+  const obsCount = Math.random() < 0.7 ? 1 : 2;
   for (let i = 0; i < obsCount; i++) {
     let l;
     let tries = 0;
@@ -570,7 +571,7 @@ function update(dt) {
   spawnTimer -= dt;
   if (spawnTimer <= 0) {
     spawn();
-    spawnTimer = 0.85 - Math.min(0.4, distance * 0.0006);
+    spawnTimer = 1.4 - Math.min(0.5, distance * 0.0004);
   }
 
   // move forward
@@ -659,15 +660,17 @@ function draw() {
   const stationCycle = Math.floor(distance / 400) % 3 === 0 && (distance % 400) < 80;
   const inTunnel = (distance % 200) > 80 && (distance % 200) < 180;
 
-  // sky
+  // sky — deep premium gradient
   const sky = ctx.createLinearGradient(0, 0, 0, H * 0.55);
   if (inTunnel) {
     sky.addColorStop(0, '#000');
+    sky.addColorStop(0.5, '#0a0218');
     sky.addColorStop(1, '#1a0033');
   } else {
-    sky.addColorStop(0, '#0a0530');
-    sky.addColorStop(0.6, '#3a1466');
-    sky.addColorStop(1, '#ff6699');
+    sky.addColorStop(0, '#02041a');
+    sky.addColorStop(0.45, '#1a0b3a');
+    sky.addColorStop(0.85, '#5a1f6e');
+    sky.addColorStop(1, '#a83975');
   }
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H * 0.55);
@@ -785,9 +788,9 @@ function draw() {
       .sort((a,b) => a.z - b.z)[0];
     if (!ob) continue;
     let color;
-    if (ob.type === 'train')      color = 'rgba(255,40,40,0.35)';      // red — switch lane
-    else if (ob.type === 'high')  color = 'rgba(255,180,0,0.35)';      // yellow — jump
-    else                          color = 'rgba(255,80,200,0.35)';     // pink — slide
+    if (ob.type === 'train')      color = 'rgba(255,40,40,0.18)';      // red — switch lane
+    else if (ob.type === 'high')  color = 'rgba(255,180,0,0.18)';      // yellow — jump
+    else                          color = 'rgba(255,80,200,0.18)';     // pink — slide
     // build a quad from z=ob.z back to z=0.05 in this lane
     const zNear = Math.min(ob.z, 0.85);
     const zFar = Math.max(0.05, zNear - 0.5);
@@ -966,6 +969,20 @@ function draw() {
     ctx.fill();
   });
   ctx.globalAlpha = 1;
+
+  // ===== distance fog (top of ground) =====
+  const fog = ctx.createLinearGradient(0, H * 0.43, 0, H * 0.62);
+  fog.addColorStop(0, 'rgba(40,20,60,0.55)');
+  fog.addColorStop(1, 'rgba(40,20,60,0)');
+  ctx.fillStyle = fog;
+  ctx.fillRect(0, H * 0.43, W, H * 0.2);
+
+  // ===== vignette (cinematic dark corners) =====
+  const vg = ctx.createRadialGradient(W/2, H*0.55, H*0.3, W/2, H*0.55, H*0.85);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
 }
 
 function roundRect(x, y, w, h, r) {
