@@ -641,12 +641,16 @@ function activatePower(type) {
 
 // ======== DRAW ========
 function project(z, laneIdx, yOff = 0) {
-  const horizon = H * 0.35;
+  const horizon = H * 0.45;
   const nearY = H * 0.92;
-  const y = horizon + (nearY - horizon) * Math.pow(z, 1.2);
+  // y curve (linear-ish for runner feel)
+  const y = horizon + (nearY - horizon) * Math.pow(z, 1.0);
+  // lanes stay spread at distance (35% min) — like real subway surfers
+  const spread = 0.35 + 0.65 * z;
   const lx = laneX(laneIdx);
-  const x = W/2 + (lx - W/2) * Math.pow(z, 1.1);
-  const scale = Math.pow(z, 1.1);
+  const x = W/2 + (lx - W/2) * spread;
+  // scale: min 0.25 so distant objects still visible
+  const scale = 0.25 + 0.75 * z;
   return { x, y: y + yOff * scale, scale };
 }
 
@@ -732,21 +736,45 @@ function draw() {
     ctx.fillText('🚇 ' + sName, W/2, H * 0.25 + 33);
   }
 
-  // grid lines (removed for less motion sickness)
-  // moving rails — fewer & slower
+  // ===== GROUND: brown/grey track bed =====
+  const horizonY = H * 0.45;
+  ctx.fillStyle = '#2a1f15';
+  ctx.fillRect(0, horizonY, W, H - horizonY);
+
+  // === 3 parallel rails (no vanishing point) ===
+  // lane lines/divider rails
+  for (let li = 0; li <= 3; li++) {
+    const top = project(0, li - 0.5);
+    const bot = project(1, li - 0.5);
+    ctx.strokeStyle = '#8a8a8a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(top.x, top.y);
+    ctx.lineTo(bot.x, bot.y);
+    ctx.stroke();
+    // shiny rail highlight
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(top.x, top.y);
+    ctx.lineTo(bot.x, bot.y);
+    ctx.stroke();
+  }
+
+  // === sleepers (横木) — moving ===
   const stripeOffset = (distance * 0.15) % 1;
-  for (let i = 0; i < 6; i++) {
-    const z = ((i / 6) + stripeOffset) % 1;
-    if (z < 0.1) continue;
+  for (let i = 0; i < 10; i++) {
+    const z = ((i / 10) + stripeOffset) % 1;
+    if (z < 0.05) continue;
     const yL = project(z, -0.5).y;
     const xL = project(z, -0.5).x;
     const xR = project(z, 2.5).x;
-    ctx.strokeStyle = `rgba(255,255,255,${0.04 + z * 0.18})`;
-    ctx.lineWidth = 1 + z * 1.5;
-    ctx.beginPath();
-    ctx.moveTo(xL, yL);
-    ctx.lineTo(xR, yL);
-    ctx.stroke();
+    const sh = 6 + 14 * z;
+    ctx.fillStyle = `rgba(80,55,30,${0.5 + z * 0.5})`;
+    ctx.fillRect(xL, yL - sh/2, xR - xL, sh);
+    // top edge highlight
+    ctx.fillStyle = `rgba(180,140,90,${0.3 + z * 0.4})`;
+    ctx.fillRect(xL, yL - sh/2, xR - xL, 2);
   }
 
   // tunnel side lights
@@ -797,55 +825,36 @@ function draw() {
       ctx.textAlign = 'center';
       ctx.fillText(d.type === 'board' ? '🛹' : '🚀', p.x, cy + 12 * p.scale);
     } else {
-      const w = 160 * p.scale, h = 130 * p.scale;
+      const w = 110 * p.scale;
       if (d.type === 'train') {
-        // 🚆 RED TRAIN — switch lane
         ctx.fillStyle = '#ff1144';
-        const th = 280 * p.scale;
-        roundRect(p.x - w/2, p.y - th, w, th, 12 * p.scale);
-        ctx.fill();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 4 * p.scale; ctx.stroke();
-        // windows
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(p.x - w/3, p.y - th + 20 * p.scale, w*0.66, 38 * p.scale);
-        ctx.fillStyle = 'rgba(255,220,220,0.95)';
-        ctx.fillRect(p.x - w/3, p.y - th + 75 * p.scale, w*0.66, 32 * p.scale);
-        // warning emoji
-        ctx.font = `bold ${56 * p.scale}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText('🚆', p.x, p.y - th/2 + 20 * p.scale);
-      } else if (d.type === 'high') {
-        // 🟠 LOW BAR — jump over
-        ctx.fillStyle = '#ffaa00';
-        roundRect(p.x - w/2, p.y - 75 * p.scale, w, 45 * p.scale, 8 * p.scale);
-        ctx.fill();
-        ctx.strokeStyle = '#000'; ctx.lineWidth = 4 * p.scale; ctx.stroke();
-        // hazard stripes
-        ctx.fillStyle = '#000';
-        for (let s = 0; s < 5; s++) {
-          ctx.fillRect(p.x - w/2 + s * 35 * p.scale, p.y - 75 * p.scale, 12 * p.scale, 45 * p.scale);
-        }
-        // arrow up
-        ctx.fillStyle = '#fff';
-        ctx.font = `bold ${30 * p.scale}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText('⬆ JUMP', p.x, p.y - 90 * p.scale);
-      } else {
-        // 💗 HIGH BAR — slide under
-        ctx.fillStyle = '#ff44cc';
-        roundRect(p.x - w/2, p.y - 110 * p.scale, w, 80 * p.scale, 8 * p.scale);
+        const th = 200 * p.scale;
+        roundRect(p.x - w/2, p.y - th, w, th, 10 * p.scale);
         ctx.fill();
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 3 * p.scale; ctx.stroke();
-        // legs
         ctx.fillStyle = '#fff';
-        for (let s = 0; s < 4; s++) {
-          ctx.fillRect(p.x - w/2 + 12*p.scale + s*40*p.scale, p.y - 95*p.scale, 8*p.scale, 60*p.scale);
-        }
-        // arrow down
+        ctx.fillRect(p.x - w/3, p.y - th + 14 * p.scale, w*0.66, 28 * p.scale);
+        ctx.fillStyle = 'rgba(255,220,220,0.95)';
+        ctx.fillRect(p.x - w/3, p.y - th + 56 * p.scale, w*0.66, 24 * p.scale);
+      } else if (d.type === 'high') {
+        // ⬆ JUMP — yellow striped low bar
+        ctx.fillStyle = '#ffaa00';
+        roundRect(p.x - w/2, p.y - 50 * p.scale, w, 32 * p.scale, 5 * p.scale);
+        ctx.fill();
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 3 * p.scale; ctx.stroke();
         ctx.fillStyle = '#000';
-        ctx.font = `bold ${30 * p.scale}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText('⬇ SLIDE', p.x, p.y - 125 * p.scale);
+        for (let s = 0; s < 4; s++) {
+          ctx.fillRect(p.x - w/2 + s * 28 * p.scale, p.y - 50 * p.scale, 9 * p.scale, 32 * p.scale);
+        }
+      } else {
+        // ⬇ SLIDE — pink high bar with legs
+        ctx.fillStyle = '#ff44cc';
+        roundRect(p.x - w/2, p.y - 100 * p.scale, w, 40 * p.scale, 5 * p.scale);
+        ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * p.scale; ctx.stroke();
+        ctx.fillStyle = '#ff44cc';
+        ctx.fillRect(p.x - w/2 + 5*p.scale, p.y - 60*p.scale, 8*p.scale, 50*p.scale);
+        ctx.fillRect(p.x + w/2 - 13*p.scale, p.y - 60*p.scale, 8*p.scale, 50*p.scale);
       }
     }
   });
