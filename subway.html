@@ -289,7 +289,7 @@ let player = {
 };
 const GRAVITY = 2200;
 const JUMP_VEL = -900;
-let speed = 480, speedTarget = 480;
+let speed = 320, speedTarget = 320;
 let distance = 0, coins = 0;
 let running = false, lastT = 0;
 let obstacles = [], coinList = [], particles = [], powerups = [];
@@ -319,7 +319,7 @@ function startGame() {
   player.jumpsLeft = 2;
   player.sliding = false; player.slideT = 0;
   player.hit = false;
-  speed = 480; speedTarget = 480;
+  speed = 320; speedTarget = 320;
   distance = SKINS[state.equipped].price === 1500 ? 500 : 0; // dragon perk
   coins = 0;
   obstacles = []; coinList = []; particles = []; powerups = [];
@@ -535,7 +535,7 @@ function burst(x, y, color, n=10) {
 
 // ======== UPDATE ========
 function update(dt) {
-  speedTarget = Math.min(900, 480 + distance * 0.15);
+  speedTarget = Math.min(700, 320 + distance * 0.08);
   speed += (speedTarget - speed) * Math.min(1, dt * 2);
   distance += speed * dt * 0.05;
 
@@ -643,10 +643,10 @@ function activatePower(type) {
 function project(z, laneIdx, yOff = 0) {
   const horizon = H * 0.35;
   const nearY = H * 0.92;
-  const y = horizon + (nearY - horizon) * Math.pow(z, 1.6);
+  const y = horizon + (nearY - horizon) * Math.pow(z, 1.2);
   const lx = laneX(laneIdx);
-  const x = W/2 + (lx - W/2) * Math.pow(z, 1.4);
-  const scale = Math.pow(z, 1.4);
+  const x = W/2 + (lx - W/2) * Math.pow(z, 1.1);
+  const scale = Math.pow(z, 1.1);
   return { x, y: y + yOff * scale, scale };
 }
 
@@ -732,26 +732,17 @@ function draw() {
     ctx.fillText('🚇 ' + sName, W/2, H * 0.25 + 33);
   }
 
-  // grid lines
-  ctx.strokeStyle = inTunnel ? 'rgba(255,100,255,0.4)' : 'rgba(0,255,255,0.3)';
-  ctx.lineWidth = 1.5;
-  for (let i = 0; i < 4; i++) {
-    ctx.beginPath();
-    const p1 = project(0, i - 0.5);
-    const p2 = project(1, i - 0.5);
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
-    ctx.stroke();
-  }
-  // moving rails
-  const stripeOffset = (distance * 0.5) % 1;
-  for (let i = 0; i < 12; i++) {
-    const z = ((i / 12) + stripeOffset) % 1;
+  // grid lines (removed for less motion sickness)
+  // moving rails — fewer & slower
+  const stripeOffset = (distance * 0.15) % 1;
+  for (let i = 0; i < 6; i++) {
+    const z = ((i / 6) + stripeOffset) % 1;
+    if (z < 0.1) continue;
     const yL = project(z, -0.5).y;
     const xL = project(z, -0.5).x;
     const xR = project(z, 2.5).x;
-    ctx.strokeStyle = `rgba(255,255,255,${0.05 + z * 0.25})`;
-    ctx.lineWidth = 1 + z * 2;
+    ctx.strokeStyle = `rgba(255,255,255,${0.04 + z * 0.18})`;
+    ctx.lineWidth = 1 + z * 1.5;
     ctx.beginPath();
     ctx.moveTo(xL, yL);
     ctx.lineTo(xR, yL);
