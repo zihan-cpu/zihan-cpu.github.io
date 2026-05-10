@@ -291,6 +291,7 @@ const GRAVITY = 2200;
 const JUMP_VEL = -900;
 let speed = 320, speedTarget = 320;
 let distance = 0, coins = 0;
+let bossDist = 0.55, cleanRunDist = 0, bossKOed = false, bossKOFlashT = 0, shakeT = 0;
 let running = false, lastT = 0;
 let obstacles = [], coinList = [], particles = [], powerups = [];
 let spawnTimer = 0;
@@ -323,6 +324,7 @@ function startGame() {
   distance = SKINS[state.equipped].price === 1500 ? 500 : 0; // dragon perk
   coins = 0;
   obstacles = []; coinList = []; particles = []; powerups = [];
+  bossDist = 0.55; cleanRunDist = 0; bossKOed = false; bossKOFlashT = 0; shakeT = 0;
   spawnTimer = 0;
   powerActive = null; powerLeft = 0;
   usedRevive = false;
@@ -590,10 +592,27 @@ function update(dt) {
         if (!pass && !o.hit) {
           o.hit = true;
           burst(player._x, H * 0.78, '#ff3344', 30);
-          setTimeout(endGame, 100);
-          return;
+          // Boss closes in! Stun briefly, slow down
+          bossDist = Math.max(0, bossDist - 0.32);
+          shakeT = 0.4;
+          speedTarget *= 0.55; // briefly slow
+          if (bossDist <= 0.001) {
+            setTimeout(endGame, 100);
+            return;
+          }
         }
       }
+    }
+    // boss recedes slowly when not hit
+    bossDist = Math.min(1, bossDist + dt * 0.04);
+    // KO boss: survive long enough with combo
+    cleanRunDist += speed * dt * 0.05;
+    if (cleanRunDist > 1500 && !bossKOed) {
+      bossKOed = true;
+      coins += 500;
+      trackMission('coins'); // ish
+      bossKOFlashT = 2.0;
+      bossDist = 1;
     }
   }
   // coin pickup
@@ -656,6 +675,14 @@ function project(z, laneIdx, yOff = 0) {
 }
 
 function draw() {
+  // === SCREEN SHAKE ===
+  ctx.save();
+  if (shakeT > 0) {
+    const sx = (Math.random() - 0.5) * 18 * shakeT;
+    const sy = (Math.random() - 0.5) * 18 * shakeT;
+    ctx.translate(sx, sy);
+    shakeT -= 1/60;
+  }
   // === SCENERY: tunnel vs station ===
   const stationCycle = Math.floor(distance / 400) % 3 === 0 && (distance % 400) < 80;
   const inTunnel = (distance % 200) > 80 && (distance % 200) < 180;
@@ -1000,12 +1027,72 @@ function draw() {
   ctx.fillStyle = fog;
   ctx.fillRect(0, H * 0.43, W, H * 0.15);
 
-  // ===== vignette — light touch only =====
-  const vg = ctx.createRadialGradient(W/2, H*0.55, H*0.5, W/2, H*0.55, H*1.0);
+  // ===== vignette (cinematic dark corners) =====
+  const vg = ctx.createRadialGradient(W/2, H*0.55, H*0.3, W/2, H*0.55, H*0.85);
   vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(0,0,0,0.25)');
+  vg.addColorStop(1, 'rgba(20,5,25,0.4)');
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, W, H);
+
+  ctx.restore();
+
+  // ===== BOSS CHASER HUD (above shake transform) =====
+  drawBossHUD();
+}
+
+function drawBossHUD() {
+  // mini "rear view" panel top-center
+  const bx = W/2 - 90, by = 56, bw = 180, bh = 60;
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  roundRect(bx, by, bw, bh, 10);
+  ctx.fill();
+  ctx.strokeStyle = bossKOed ? '#39ff88' : '#ff3355';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // label
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(bossKOed ? '★ BOSS DEFEATED' : '👹 CHASER', bx + 10, by + 14);
+  // distance bar
+  const barX = bx + 10, barY = by + 22, barW = bw - 20, barH = 10;
+  ctx.fillStyle = '#222';
+  ctx.fillRect(barX, barY, barW, barH);
+  const safety = bossKOed ? 1 : bossDist;
+  let col;
+  if (safety > 0.6) col = '#39ff88';
+  else if (safety > 0.3) col = '#ffd23a';
+  else col = '#ff3355';
+  ctx.fillStyle = col;
+  ctx.fillRect(barX, barY, barW * safety, barH);
+  // boss face icon at left edge of bar (closer = right)
+  const faceX = barX + barW * (1 - safety);
+  ctx.font = '20px sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(bossKOed ? '😴' : (safety < 0.3 ? '😡' : '👹'), faceX - 8, barY + 9);
+  // progress to KO
+  if (!bossKOed) {
+    const koPct = Math.min(1, cleanRunDist / 1500);
+    ctx.fillStyle = '#888';
+    ctx.font = '9px monospace';
+    ctx.fillText(`KO ${Math.floor(koPct*100)}%`, bx + 10, by + 50);
+    ctx.fillStyle = '#39ff88';
+    ctx.fillRect(bx + 60, by + 44, (bw - 70) * koPct, 4);
+  }
+
+  // KO flash overlay
+  if (bossKOFlashT > 0) {
+    ctx.fillStyle = `rgba(255,255,200,${bossKOFlashT * 0.4})`;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#39ff88';
+    ctx.lineWidth = 4;
+    ctx.font = 'bold 56px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeText('K.O.  +500💰', W/2, H/2);
+    ctx.fillText('K.O.  +500💰', W/2, H/2);
+    bossKOFlashT -= 1/60;
+  }
 }
 
 function roundRect(x, y, w, h, r) {
