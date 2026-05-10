@@ -739,9 +739,12 @@ function draw() {
     ctx.fillText('🚇 ' + sName, W/2, H * 0.25 + 33);
   }
 
-  // ===== GROUND: brown/grey track bed =====
+  // ===== GROUND: lighter slate track bed =====
   const horizonY = H * 0.45;
-  ctx.fillStyle = '#2a1f15';
+  const groundGrad = ctx.createLinearGradient(0, horizonY, 0, H);
+  groundGrad.addColorStop(0, '#3a2e44');
+  groundGrad.addColorStop(1, '#1a1320');
+  ctx.fillStyle = groundGrad;
   ctx.fillRect(0, horizonY, W, H - horizonY);
 
   // === 3 parallel rails (no vanishing point) ===
@@ -970,17 +973,17 @@ function draw() {
   });
   ctx.globalAlpha = 1;
 
-  // ===== distance fog (top of ground) =====
-  const fog = ctx.createLinearGradient(0, H * 0.43, 0, H * 0.62);
-  fog.addColorStop(0, 'rgba(40,20,60,0.55)');
+  // ===== distance fog (top of ground) — subtle =====
+  const fog = ctx.createLinearGradient(0, H * 0.43, 0, H * 0.58);
+  fog.addColorStop(0, 'rgba(40,20,60,0.25)');
   fog.addColorStop(1, 'rgba(40,20,60,0)');
   ctx.fillStyle = fog;
-  ctx.fillRect(0, H * 0.43, W, H * 0.2);
+  ctx.fillRect(0, H * 0.43, W, H * 0.15);
 
-  // ===== vignette (cinematic dark corners) =====
-  const vg = ctx.createRadialGradient(W/2, H*0.55, H*0.3, W/2, H*0.55, H*0.85);
+  // ===== vignette — light touch only =====
+  const vg = ctx.createRadialGradient(W/2, H*0.55, H*0.5, W/2, H*0.55, H*1.0);
   vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.25)');
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, W, H);
 }
