@@ -3,54 +3,128 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>地铁跑酷 SUBWAY DASH</title>
+<title>地铁跑酷 SUBWAY DASH PRO</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html,body { width:100%; height:100%; overflow:hidden; background:#000; font-family:-apple-system,sans-serif; user-select:none; -webkit-user-select:none; touch-action:none; }
+html,body { width:100%; height:100%; overflow:hidden; background:#000; font-family:-apple-system,sans-serif; user-select:none; -webkit-user-select:none; touch-action:none; color:#fff; }
 canvas { display:block; position:absolute; inset:0; }
 #hud {
   position:fixed; top:14px; left:0; right:0; z-index:10;
-  display:flex; justify-content:space-around; padding:0 16px;
-  pointer-events:none; color:#fff; font-weight:900;
-  text-shadow:0 2px 8px rgba(0,0,0,0.8);
+  display:flex; justify-content:space-around; padding:0 12px;
+  pointer-events:none; font-weight:900;
+  text-shadow:0 2px 8px rgba(0,0,0,0.8); flex-wrap:wrap; gap:6px;
 }
-.stat { background:rgba(0,0,0,0.4); padding:8px 16px; border-radius:14px;
+.stat { background:rgba(0,0,0,0.45); padding:6px 12px; border-radius:12px;
   border:2px solid rgba(255,255,255,0.2); backdrop-filter:blur(10px);
-  text-align:center; min-width:90px; }
-.stat .lbl { font-size:10px; letter-spacing:2px; opacity:0.7; }
-.stat .val { font-size:22px; }
+  text-align:center; min-width:78px; }
+.stat .lbl { font-size:9px; letter-spacing:2px; opacity:0.7; }
+.stat .val { font-size:18px; }
 #score .val { color:#00ffff; text-shadow:0 0 10px #00ffff; }
 #coins .val { color:#ffe259; text-shadow:0 0 10px #ffe259; }
 #high .val { color:#ff66ff; text-shadow:0 0 10px #ff66ff; }
+#total .val { color:#7fff7f; text-shadow:0 0 10px #7fff7f; font-size:14px; }
+
+/* Power-up timer */
+#power-bar {
+  position:fixed; top:80px; left:50%; transform:translateX(-50%);
+  z-index:11; display:none; align-items:center; gap:8px;
+  background:rgba(0,0,0,0.6); padding:6px 14px; border-radius:20px;
+  border:2px solid #00ffff; box-shadow:0 0 20px #00ffff;
+}
+#power-bar .icon { font-size:22px; }
+#power-bar .timebar { width:120px; height:8px; background:rgba(255,255,255,0.2); border-radius:4px; overflow:hidden; }
+#power-bar .fill { height:100%; background:linear-gradient(90deg,#00ffff,#ff00ff); width:100%; transition:width 0.1s; }
+
+/* Daily mission display */
+#mission {
+  position:fixed; top:80px; right:12px; z-index:10;
+  background:rgba(0,0,0,0.5); padding:8px 12px; border-radius:10px;
+  border:2px solid #ffe259; max-width:200px; pointer-events:none;
+  font-size:11px; backdrop-filter:blur(8px);
+}
+#mission .ttl { color:#ffe259; font-weight:bold; font-size:10px; letter-spacing:1.5px; margin-bottom:4px; }
+#mission .desc { line-height:1.4; }
+#mission .prog { margin-top:5px; height:5px; background:rgba(255,255,255,0.2); border-radius:3px; overflow:hidden; }
+#mission .pfill { height:100%; background:#ffe259; transition:width 0.3s; }
 
 #overlay {
   position:fixed; inset:0; z-index:50; display:flex; flex-direction:column;
-  align-items:center; justify-content:center; color:#fff; text-align:center;
+  align-items:center; justify-content:center; text-align:center;
   background:radial-gradient(circle, rgba(0,80,160,0.6), rgba(0,0,0,0.95));
-  backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px); padding:20px;
 }
 #overlay h1 {
-  font-size:54px; font-weight:900; letter-spacing:3px;
+  font-size:46px; font-weight:900; letter-spacing:3px;
   background:linear-gradient(90deg,#00ffff,#ff66ff,#ffe259);
   -webkit-background-clip:text; background-clip:text; color:transparent;
-  text-shadow:0 0 30px rgba(0,255,255,0.5); margin-bottom:8px;
+  text-shadow:0 0 30px rgba(0,255,255,0.5); margin-bottom:6px;
 }
-#overlay .sub { font-size:14px; opacity:0.7; letter-spacing:4px; margin-bottom:30px; }
+#overlay .sub { font-size:13px; opacity:0.7; letter-spacing:4px; margin-bottom:24px; }
+#overlay .btn-row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
 #overlay button {
-  padding:18px 50px; font-size:22px; font-weight:900; letter-spacing:4px;
-  background:linear-gradient(135deg,#00ffff,#ff00ff);
+  padding:14px 32px; font-size:18px; font-weight:900; letter-spacing:3px;
   border:none; border-radius:50px; color:#000; cursor:pointer;
-  box-shadow:0 0 40px rgba(255,0,255,0.6); transition:transform 0.1s;
-  font-family:inherit;
+  transition:transform 0.1s; font-family:inherit;
 }
 #overlay button:active { transform:scale(0.95); }
-#overlay .hint { margin-top:30px; font-size:14px; line-height:1.8; opacity:0.8; }
+.btn-primary { background:linear-gradient(135deg,#00ffff,#ff00ff); box-shadow:0 0 30px rgba(255,0,255,0.6); }
+.btn-second { background:linear-gradient(135deg,#ffe259,#ffa751); box-shadow:0 0 20px rgba(255,226,89,0.4); }
+
+#overlay .hint { margin-top:20px; font-size:12px; line-height:1.7; opacity:0.8; }
 #overlay .hint span { color:#00ffff; font-weight:bold; }
 
-#go-stats { font-size:16px; margin:18px 0; line-height:1.8; }
-#go-stats b { color:#ffe259; font-size:24px; }
+#go-stats { font-size:14px; margin:14px 0; line-height:1.7; }
+#go-stats b { color:#ffe259; font-size:22px; }
 
-/* 触屏控制按钮（隐藏，用滑动） */
+/* SHOP / MISSION panels */
+.panel {
+  position:fixed; inset:0; z-index:60; display:none; flex-direction:column;
+  background:linear-gradient(180deg,#1a0033,#000);
+  padding:20px 16px; overflow-y:auto;
+}
+.panel h2 {
+  font-size:28px; font-weight:900; text-align:center;
+  background:linear-gradient(90deg,#00ffff,#ff66ff);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  margin-bottom:6px; letter-spacing:3px;
+}
+.panel .coin-bal { text-align:center; font-size:14px; color:#ffe259; margin-bottom:18px; }
+.panel .coin-bal b { font-size:22px; }
+.panel .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; padding-bottom:80px; }
+.skin {
+  background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.15);
+  border-radius:14px; padding:14px; text-align:center; cursor:pointer;
+  transition:all 0.2s;
+}
+.skin:active { transform:scale(0.96); }
+.skin.owned { border-color:#7fff7f; }
+.skin.equipped { border-color:#00ffff; box-shadow:0 0 20px #00ffff; background:rgba(0,255,255,0.1); }
+.skin .preview { font-size:60px; margin:6px 0; line-height:1; }
+.skin .name { font-weight:bold; font-size:14px; margin-bottom:4px; }
+.skin .desc { font-size:10px; opacity:0.7; margin-bottom:8px; min-height:24px; }
+.skin .price { font-size:13px; color:#ffe259; font-weight:bold; }
+.skin .price.owned { color:#7fff7f; }
+.panel .close-btn {
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:61;
+  padding:12px 36px; font-size:16px; font-weight:900; letter-spacing:3px;
+  background:linear-gradient(135deg,#fff,#ddd); color:#000; border:none;
+  border-radius:50px; cursor:pointer; font-family:inherit;
+}
+
+/* Toast */
+#toast {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:linear-gradient(135deg,#1a0033,#330044); color:#fff;
+  padding:18px 28px; border:2px solid #ff00ff; border-radius:14px;
+  z-index:9999; font-size:18px; font-weight:bold; text-align:center;
+  box-shadow:0 0 30px #ff00ff; display:none; animation:toastPop 0.3s;
+  pointer-events:none;
+}
+@keyframes toastPop {
+  0% { transform:translate(-50%,-50%) scale(0.5); opacity:0; }
+  100% { transform:translate(-50%,-50%) scale(1); opacity:1; }
+}
+
 #touch-zone { position:fixed; inset:0; z-index:5; touch-action:none; }
 </style>
 </head>
@@ -62,19 +136,44 @@ canvas { display:block; position:absolute; inset:0; }
   <div class="stat" id="score"><div class="lbl">SCORE</div><div class="val" id="v-score">0</div></div>
   <div class="stat" id="coins"><div class="lbl">COINS</div><div class="val" id="v-coins">0</div></div>
   <div class="stat" id="high"><div class="lbl">BEST</div><div class="val" id="v-high">0</div></div>
+  <div class="stat" id="total"><div class="lbl">💰 TOTAL</div><div class="val" id="v-total">0</div></div>
+</div>
+
+<div id="power-bar">
+  <span class="icon" id="power-icon">🛹</span>
+  <div class="timebar"><div class="fill" id="power-fill"></div></div>
+</div>
+
+<div id="mission">
+  <div class="ttl">📋 每日任务</div>
+  <div class="desc" id="m-desc">加载中...</div>
+  <div class="prog"><div class="pfill" id="m-fill"></div></div>
 </div>
 
 <div id="overlay">
   <h1>🚇 SUBWAY DASH</h1>
-  <div class="sub">地铁跑酷</div>
+  <div class="sub">PRO · v2</div>
   <div id="go-stats" style="display:none"></div>
-  <button id="btn-start">START</button>
+  <div class="btn-row">
+    <button id="btn-start" class="btn-primary">START</button>
+    <button id="btn-shop" class="btn-second">🛒 SHOP</button>
+  </div>
   <div class="hint">
-    📱 <span>左右滑动</span> 换轨道<br>
-    📱 <span>上滑</span> 跳跃 · <span>下滑</span> 滑铲<br>
-    ⌨️ 键盘:<span>← → ↑ ↓</span>
+    📱 <span>左右滑</span> 换轨道 · <span>上滑</span> 跳/二段跳<br>
+    📱 <span>下滑</span> 滑铲 · 接道具 = 5 秒无敌<br>
+    ⌨️ ← → ↑ ↓ &nbsp;|&nbsp; ⬆️⬆️ 双跳
   </div>
 </div>
+
+<!-- SHOP PANEL -->
+<div class="panel" id="shop-panel">
+  <h2>🛒 角色商店</h2>
+  <div class="coin-bal">💰 <b id="shop-balance">0</b> 金币</div>
+  <div class="grid" id="shop-grid"></div>
+  <button class="close-btn" id="shop-close">← 返回</button>
+</div>
+
+<div id="toast"></div>
 
 <script>
 const canvas = document.getElementById('game');
@@ -92,94 +191,257 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
-// === GAME STATE ===
-const LANES = [-1, 0, 1]; // left, mid, right
-let lane = 1; // 0,1,2 (index)
+// ======== SKINS ========
+const SKINS = {
+  cyan:    { emoji:'🤖', name:'CYAN BOT',    color:'#00ffff', price:0,    desc:'初始机器人' },
+  red:     { emoji:'🥷', name:'NINJA',       color:'#ff3344', price:200,  desc:'忍者跑酷高手' },
+  pink:    { emoji:'🦄', name:'UNICORN',     color:'#ff66ff', price:300,  desc:'独角兽彩虹尾迹' },
+  green:   { emoji:'🐸', name:'FROG',        color:'#7fff7f', price:400,  desc:'青蛙跳跃 +10%' },
+  gold:    { emoji:'👑', name:'KING',        color:'#ffe259', price:800,  desc:'金币 ×2' },
+  ghost:   { emoji:'👻', name:'GHOST',       color:'#e0e0ff', price:1000, desc:'起死回生 1 次/局' },
+  dragon:  { emoji:'🐲', name:'DRAGON',      color:'#aa00ff', price:1500, desc:'起步 +500 距离' },
+  astro:   { emoji:'👨‍🚀', name:'ASTRO',       color:'#88aaff', price:2000, desc:'道具持续 ×2' },
+};
+
+let state = {
+  totalCoins: +localStorage.getItem('sd-coins') || 0,
+  highScore:  +localStorage.getItem('sd-high') || 0,
+  owned:      JSON.parse(localStorage.getItem('sd-owned') || '["cyan"]'),
+  equipped:   localStorage.getItem('sd-equipped') || 'cyan',
+};
+
+function saveState() {
+  localStorage.setItem('sd-coins', state.totalCoins);
+  localStorage.setItem('sd-high', state.highScore);
+  localStorage.setItem('sd-owned', JSON.stringify(state.owned));
+  localStorage.setItem('sd-equipped', state.equipped);
+}
+
+// ======== DAILY MISSION ========
+const MISSIONS = [
+  { id:'dist1000',  desc:'跑 1000m',     target:1000, reward:100, key:'distance' },
+  { id:'coin50',    desc:'收集 50 金币',  target:50,   reward:80,  key:'coins' },
+  { id:'jump20',    desc:'跳 20 次',     target:20,   reward:60,  key:'jumps' },
+  { id:'slide15',   desc:'滑铲 15 次',    target:15,   reward:60,  key:'slides' },
+  { id:'power3',    desc:'吃 3 个道具',   target:3,    reward:120, key:'powerups' },
+  { id:'dist2500',  desc:'跑 2500m',    target:2500, reward:250, key:'distance' },
+];
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+let dailyMission;
+function loadMission() {
+  const saved = JSON.parse(localStorage.getItem('sd-mission') || 'null');
+  if (saved && saved.date === todayKey()) {
+    dailyMission = saved;
+  } else {
+    const m = MISSIONS[Math.floor(Math.random() * MISSIONS.length)];
+    dailyMission = { ...m, date:todayKey(), progress:0, done:false };
+    localStorage.setItem('sd-mission', JSON.stringify(dailyMission));
+  }
+  renderMission();
+}
+function renderMission() {
+  const el = document.getElementById('m-desc');
+  const fill = document.getElementById('m-fill');
+  if (dailyMission.done) {
+    el.innerHTML = `✅ 已完成!<br>+${dailyMission.reward} 💰`;
+    fill.style.width = '100%';
+  } else {
+    el.innerHTML = `${dailyMission.desc}<br>${dailyMission.progress}/${dailyMission.target} → +${dailyMission.reward}💰`;
+    fill.style.width = Math.min(100, dailyMission.progress / dailyMission.target * 100) + '%';
+  }
+}
+function trackMission(key, n=1) {
+  if (!dailyMission || dailyMission.done) return;
+  if (dailyMission.key !== key) return;
+  dailyMission.progress += n;
+  if (dailyMission.progress >= dailyMission.target) {
+    dailyMission.done = true;
+    dailyMission.progress = dailyMission.target;
+    state.totalCoins += dailyMission.reward;
+    saveState();
+    toast(`🎉 任务完成! +${dailyMission.reward} 💰`);
+  }
+  localStorage.setItem('sd-mission', JSON.stringify(dailyMission));
+  renderMission();
+}
+
+// ======== TOAST ========
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg, ms=2000) {
+  toastEl.innerHTML = msg;
+  toastEl.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.style.display = 'none', ms);
+}
+
+// ======== GAME STATE ========
+let lane = 1;
 let player = {
-  laneIdx: 1,
-  y: 0,        // jump offset
-  vy: 0,
-  sliding: false,
-  slideT: 0,
+  laneIdx: 1, _x: undefined,
+  y: 0, vy: 0,
+  jumpsLeft: 2,
+  sliding: false, slideT: 0,
+  hit: false,
 };
 const GRAVITY = 2200;
 const JUMP_VEL = -900;
-let speed = 480;        // base scroll speed
-let speedTarget = 480;
-let distance = 0;
-let coins = 0;
-let highScore = +localStorage.getItem('sd-high') || 0;
-let totalCoins = +localStorage.getItem('sd-coins') || 0;
-let running = false;
-let lastT = 0;
-
-// obstacles & coins
-let obstacles = [];
-let coinList = [];
-let particles = [];
+let speed = 480, speedTarget = 480;
+let distance = 0, coins = 0;
+let running = false, lastT = 0;
+let obstacles = [], coinList = [], particles = [], powerups = [];
 let spawnTimer = 0;
+let powerActive = null;  // 'board' | 'jet' | null
+let powerLeft = 0;
+let usedRevive = false;
 
-// UI
-const overlay = document.getElementById('overlay');
-const goStats = document.getElementById('go-stats');
-const btnStart = document.getElementById('btn-start');
-document.getElementById('v-high').textContent = highScore;
+// session counters for missions
+let sess = { jumps:0, slides:0, powerups:0 };
+
+// scenery state
+let stationCounter = 0;
+
+// hud refs
+document.getElementById('v-high').textContent = state.highScore;
+document.getElementById('v-total').textContent = state.totalCoins;
 
 function laneX(idx) {
-  const trackWidth = Math.min(W * 0.85, 480);
-  const center = W / 2;
-  return center + (idx - 1) * (trackWidth / 3);
+  const tw = Math.min(W * 0.85, 480);
+  return W/2 + (idx - 1) * (tw / 3);
 }
 
 function startGame() {
-  player.laneIdx = 1;
+  player.laneIdx = 1; player._x = undefined;
   player.y = 0; player.vy = 0;
+  player.jumpsLeft = 2;
   player.sliding = false; player.slideT = 0;
+  player.hit = false;
   speed = 480; speedTarget = 480;
-  distance = 0; coins = 0;
-  obstacles = []; coinList = []; particles = [];
+  distance = SKINS[state.equipped].price === 1500 ? 500 : 0; // dragon perk
+  coins = 0;
+  obstacles = []; coinList = []; particles = []; powerups = [];
   spawnTimer = 0;
+  powerActive = null; powerLeft = 0;
+  usedRevive = false;
+  sess = { jumps:0, slides:0, powerups:0 };
+  document.getElementById('power-bar').style.display = 'none';
   running = true;
-  overlay.style.display = 'none';
-  goStats.style.display = 'none';
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('go-stats').style.display = 'none';
   lastT = performance.now();
   requestAnimationFrame(loop);
 }
 
 function endGame() {
+  // ghost skin perk: revive once
+  if (state.equipped === 'ghost' && !usedRevive) {
+    usedRevive = true;
+    player.hit = false;
+    // clear nearby obstacles
+    obstacles = obstacles.filter(o => o.z < 0.7);
+    burst(player._x, H * 0.78, '#fff', 40);
+    toast('👻 复活!', 1500);
+    return;
+  }
   running = false;
   const score = Math.floor(distance);
-  if (score > highScore) {
-    highScore = score;
-    localStorage.setItem('sd-high', highScore);
-    document.getElementById('v-high').textContent = highScore;
+  if (score > state.highScore) {
+    state.highScore = score;
+    document.getElementById('v-high').textContent = state.highScore;
   }
-  totalCoins += coins;
-  localStorage.setItem('sd-coins', totalCoins);
+  // gold skin: 2x coins
+  let gain = coins;
+  if (state.equipped === 'gold') gain *= 2;
+  state.totalCoins += gain;
+  saveState();
+  trackMission('distance', score);
+  document.getElementById('v-total').textContent = state.totalCoins;
+  const goStats = document.getElementById('go-stats');
   goStats.innerHTML = `
-    💥 撞车了!<br>
-    本局距离:<b>${score}m</b><br>
-    本局金币:<b>${coins} 💰</b><br>
-    最高纪录:<b>${highScore}m</b>
+    💥 撞车!<br>
+    距离:<b>${score}m</b><br>
+    金币:<b>${gain} 💰</b>${state.equipped === 'gold' ? ' (×2)' : ''}<br>
+    最高:<b>${state.highScore}m</b>
   `;
   goStats.style.display = 'block';
-  btnStart.textContent = 'AGAIN';
-  overlay.style.display = 'flex';
+  document.getElementById('btn-start').textContent = 'AGAIN';
+  document.getElementById('overlay').style.display = 'flex';
 }
 
-btnStart.addEventListener('click', startGame);
-btnStart.addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); }, {passive:false});
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('btn-start').addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); }, {passive:false});
 
-// === INPUT ===
+// ======== SHOP ========
+const shopPanel = document.getElementById('shop-panel');
+function openShop() {
+  document.getElementById('overlay').style.display = 'none';
+  shopPanel.style.display = 'flex';
+  renderShop();
+}
+function closeShop() {
+  shopPanel.style.display = 'none';
+  document.getElementById('overlay').style.display = 'flex';
+}
+function renderShop() {
+  document.getElementById('shop-balance').textContent = state.totalCoins;
+  const grid = document.getElementById('shop-grid');
+  grid.innerHTML = '';
+  for (const id in SKINS) {
+    const s = SKINS[id];
+    const owned = state.owned.includes(id);
+    const equipped = state.equipped === id;
+    const div = document.createElement('div');
+    div.className = 'skin' + (owned ? ' owned' : '') + (equipped ? ' equipped' : '');
+    div.innerHTML = `
+      <div class="preview" style="filter:drop-shadow(0 0 10px ${s.color})">${s.emoji}</div>
+      <div class="name" style="color:${s.color}">${s.name}</div>
+      <div class="desc">${s.desc}</div>
+      <div class="price ${owned ? 'owned' : ''}">${equipped ? '✅ 已装备' : (owned ? '点击装备' : `${s.price} 💰`)}</div>
+    `;
+    div.onclick = () => {
+      if (equipped) return;
+      if (owned) {
+        state.equipped = id;
+        saveState();
+        toast(`✨ 装备 ${s.name}!`);
+        renderShop();
+      } else {
+        if (state.totalCoins < s.price) {
+          toast('💸 金币不够!', 1500);
+          return;
+        }
+        state.totalCoins -= s.price;
+        state.owned.push(id);
+        state.equipped = id;
+        saveState();
+        document.getElementById('v-total').textContent = state.totalCoins;
+        toast(`🎉 解锁 ${s.name}!`);
+        renderShop();
+      }
+    };
+    grid.appendChild(div);
+  }
+}
+document.getElementById('btn-shop').onclick = openShop;
+document.getElementById('shop-close').onclick = closeShop;
+
+// ======== INPUT ========
 function moveLane(dir) {
   if (!running) return;
   player.laneIdx = Math.max(0, Math.min(2, player.laneIdx + dir));
 }
 function jump() {
   if (!running) return;
-  if (player.y === 0 && !player.sliding) {
-    player.vy = JUMP_VEL;
-    burst(laneX(player.laneIdx), H * 0.78, '#00ffff', 8);
+  if (player.jumpsLeft > 0 && !player.sliding) {
+    let force = JUMP_VEL;
+    if (state.equipped === 'green') force *= 1.1; // frog
+    player.vy = force;
+    player.jumpsLeft--;
+    sess.jumps++; trackMission('jumps');
+    burst(player._x, H * 0.78, '#00ffff', 8);
   }
 }
 function slide() {
@@ -187,10 +449,10 @@ function slide() {
   if (player.y === 0 && !player.sliding) {
     player.sliding = true;
     player.slideT = 0.6;
+    sess.slides++; trackMission('slides');
   }
 }
 
-// keyboard
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft' || e.key === 'a') moveLane(-1);
   else if (e.key === 'ArrowRight' || e.key === 'd') moveLane(1);
@@ -199,22 +461,20 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'Enter' && !running) startGame();
 });
 
-// touch / swipe
 let touchX = 0, touchY = 0, touchActive = false;
-const touchZone = document.getElementById('touch-zone');
-touchZone.addEventListener('touchstart', (e) => {
+const tz = document.getElementById('touch-zone');
+tz.addEventListener('touchstart', (e) => {
   e.preventDefault();
   const t = e.touches[0];
   touchX = t.clientX; touchY = t.clientY;
   touchActive = true;
 }, {passive:false});
-touchZone.addEventListener('touchmove', (e) => {
+tz.addEventListener('touchmove', (e) => {
   e.preventDefault();
   if (!touchActive) return;
   const t = e.touches[0];
-  const dx = t.clientX - touchX;
-  const dy = t.clientY - touchY;
-  const TH = 35;
+  const dx = t.clientX - touchX, dy = t.clientY - touchY;
+  const TH = 30;
   if (Math.abs(dx) > Math.abs(dy)) {
     if (dx > TH)  { moveLane(1);  touchActive = false; }
     if (dx < -TH) { moveLane(-1); touchActive = false; }
@@ -223,30 +483,39 @@ touchZone.addEventListener('touchmove', (e) => {
     if (dy >  TH) { slide(); touchActive = false; }
   }
 }, {passive:false});
-touchZone.addEventListener('touchend', () => { touchActive = false; });
+tz.addEventListener('touchend', () => { touchActive = false; });
+// tap = jump
+tz.addEventListener('click', () => { if (running) jump(); });
 
-// === SPAWN ===
+// ======== SPAWN ========
 function spawn() {
-  // pattern: 1-3 obstacles + 0-3 coins per row
-  const usedLanes = new Set();
+  const used = new Set();
   const obsCount = 1 + Math.floor(Math.random() * 2);
   for (let i = 0; i < obsCount; i++) {
     let l;
-    do { l = Math.floor(Math.random() * 3); } while (usedLanes.has(l));
-    if (usedLanes.size >= 2) break; // never block all 3 lanes
-    usedLanes.add(l);
-    const types = ['barrier','train','high']; // barrier=滑铲过, train=换道, high=跳过
+    let tries = 0;
+    do { l = Math.floor(Math.random() * 3); tries++; } while (used.has(l) && tries < 10);
+    if (used.size >= 2) break;
+    used.add(l);
+    const types = ['barrier','train','high'];
     const type = types[Math.floor(Math.random() * types.length)];
     obstacles.push({ laneIdx: l, z: -100, type });
   }
-  // coins on free lanes
   for (let l = 0; l < 3; l++) {
-    if (!usedLanes.has(l) && Math.random() < 0.55) {
-      // line of 3-5 coins
+    if (!used.has(l) && Math.random() < 0.55) {
       const n = 3 + Math.floor(Math.random() * 3);
       for (let k = 0; k < n; k++) {
         coinList.push({ laneIdx: l, z: -100 - k * 70, picked: false });
       }
+    }
+  }
+  // power-up rare
+  if (Math.random() < 0.18) {
+    const freeLanes = [0,1,2].filter(l => !used.has(l));
+    if (freeLanes.length) {
+      const l = freeLanes[Math.floor(Math.random() * freeLanes.length)];
+      const ptype = Math.random() < 0.5 ? 'board' : 'jet';
+      powerups.push({ laneIdx: l, z: -120, type: ptype, picked: false });
     }
   }
 }
@@ -264,27 +533,38 @@ function burst(x, y, color, n=10) {
   }
 }
 
-// === GAME LOOP ===
+// ======== UPDATE ========
 function update(dt) {
-  // speed up over time
   speedTarget = Math.min(900, 480 + distance * 0.15);
   speed += (speedTarget - speed) * Math.min(1, dt * 2);
   distance += speed * dt * 0.05;
 
-  // player physics
+  // physics
   if (player.y < 0 || player.vy !== 0) {
     player.vy += GRAVITY * dt;
     player.y += player.vy * dt;
-    if (player.y > 0) { player.y = 0; player.vy = 0; }
+    if (player.y > 0) {
+      player.y = 0; player.vy = 0;
+      player.jumpsLeft = 2;
+    }
   }
   if (player.sliding) {
     player.slideT -= dt;
     if (player.slideT <= 0) player.sliding = false;
   }
 
-  // smooth lane move
   const targetX = laneX(player.laneIdx);
   player._x = player._x === undefined ? targetX : player._x + (targetX - player._x) * Math.min(1, dt * 14);
+
+  // power decay
+  if (powerActive) {
+    powerLeft -= dt;
+    document.getElementById('power-fill').style.width = (powerLeft / powerMax * 100) + '%';
+    if (powerLeft <= 0) {
+      powerActive = null;
+      document.getElementById('power-bar').style.display = 'none';
+    }
+  }
 
   // spawn
   spawnTimer -= dt;
@@ -293,91 +573,167 @@ function update(dt) {
     spawnTimer = 0.85 - Math.min(0.4, distance * 0.0006);
   }
 
-  // move obstacles & coins forward (z grows toward 1 = bottom)
+  // move forward
   const fwd = speed * dt * 0.0035;
   obstacles.forEach(o => o.z += fwd);
   coinList.forEach(c => c.z += fwd);
+  powerups.forEach(p => p.z += fwd);
 
   // collisions
-  for (const o of obstacles) {
-    if (o.z > 0.78 && o.z < 0.92 && o.laneIdx === player.laneIdx) {
-      let pass = false;
-      if (o.type === 'barrier' && player.sliding) pass = true;
-      if (o.type === 'high' && player.y < -120) pass = true;
-      if (!pass && !o.hit) {
-        o.hit = true;
-        burst(player._x, H * 0.78, '#ff3344', 30);
-        setTimeout(endGame, 100);
-        return;
+  if (!powerActive) {
+    for (const o of obstacles) {
+      if (o.z > 0.78 && o.z < 0.92 && o.laneIdx === player.laneIdx) {
+        let pass = false;
+        if (o.type === 'barrier' && player.sliding) pass = true;
+        if (o.type === 'high' && player.y < -120) pass = true;
+        if (!pass && !o.hit) {
+          o.hit = true;
+          burst(player._x, H * 0.78, '#ff3344', 30);
+          setTimeout(endGame, 100);
+          return;
+        }
       }
     }
   }
   // coin pickup
   for (const c of coinList) {
-    if (!c.picked && c.z > 0.78 && c.z < 0.92 && c.laneIdx === player.laneIdx) {
+    if (!c.picked && c.z > 0.75 && c.z < 0.92 && c.laneIdx === player.laneIdx) {
       c.picked = true;
       coins++;
-      burst(laneX(c.laneIdx), H * 0.78, '#ffe259', 8);
+      trackMission('coins');
+      burst(laneX(c.laneIdx), H * 0.78, '#ffe259', 6);
+    }
+  }
+  // power pickup
+  for (const p of powerups) {
+    if (!p.picked && p.z > 0.75 && p.z < 0.92 && p.laneIdx === player.laneIdx) {
+      p.picked = true;
+      activatePower(p.type);
     }
   }
 
   // cull
   obstacles = obstacles.filter(o => o.z < 1.05);
   coinList = coinList.filter(c => c.z < 1.05);
+  powerups = powerups.filter(p => p.z < 1.05);
 
-  // particles
   particles.forEach(p => {
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.vy += 600 * dt;
-    p.life -= dt;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.vy += 600 * dt; p.life -= dt;
   });
   particles = particles.filter(p => p.life > 0);
 
-  // hud
   document.getElementById('v-score').textContent = Math.floor(distance);
   document.getElementById('v-coins').textContent = coins;
 }
 
-// === DRAW (pseudo-3D perspective) ===
+let powerMax = 5;
+function activatePower(type) {
+  powerActive = type;
+  powerMax = 5;
+  if (state.equipped === 'astro') powerMax = 10;
+  powerLeft = powerMax;
+  sess.powerups++; trackMission('powerups');
+  document.getElementById('power-icon').textContent = type === 'board' ? '🛹' : '🚀';
+  document.getElementById('power-bar').style.display = 'flex';
+  toast(type === 'board' ? '🛹 滑板 5 秒无敌!' : '🚀 喷气背包!', 1200);
+}
+
+// ======== DRAW ========
 function project(z, laneIdx, yOff = 0) {
-  // z: 0 (far) -> 1 (near)
   const horizon = H * 0.35;
   const nearY = H * 0.92;
   const y = horizon + (nearY - horizon) * Math.pow(z, 1.6);
   const lx = laneX(laneIdx);
-  const center = W / 2;
-  const x = center + (lx - center) * Math.pow(z, 1.4);
+  const x = W/2 + (lx - W/2) * Math.pow(z, 1.4);
   const scale = Math.pow(z, 1.4);
   return { x, y: y + yOff * scale, scale };
 }
 
 function draw() {
-  // sky gradient
+  // === SCENERY: tunnel vs station ===
+  const stationCycle = Math.floor(distance / 400) % 3 === 0 && (distance % 400) < 80;
+  const inTunnel = (distance % 200) > 80 && (distance % 200) < 180;
+
+  // sky
   const sky = ctx.createLinearGradient(0, 0, 0, H * 0.55);
-  sky.addColorStop(0, '#0a0530');
-  sky.addColorStop(0.6, '#3a1466');
-  sky.addColorStop(1, '#ff6699');
+  if (inTunnel) {
+    sky.addColorStop(0, '#000');
+    sky.addColorStop(1, '#1a0033');
+  } else {
+    sky.addColorStop(0, '#0a0530');
+    sky.addColorStop(0.6, '#3a1466');
+    sky.addColorStop(1, '#ff6699');
+  }
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H * 0.55);
 
-  // sun
-  const sunY = H * 0.4;
-  const sunGrad = ctx.createRadialGradient(W/2, sunY, 0, W/2, sunY, 200);
-  sunGrad.addColorStop(0, 'rgba(255,255,150,0.8)');
-  sunGrad.addColorStop(1, 'rgba(255,100,150,0)');
-  ctx.fillStyle = sunGrad;
-  ctx.fillRect(0, 0, W, H * 0.6);
+  // sun (only outside tunnel)
+  if (!inTunnel) {
+    const sunY = H * 0.4;
+    const sg = ctx.createRadialGradient(W/2, sunY, 0, W/2, sunY, 200);
+    sg.addColorStop(0, 'rgba(255,255,150,0.8)');
+    sg.addColorStop(1, 'rgba(255,100,150,0)');
+    ctx.fillStyle = sg;
+    ctx.fillRect(0, 0, W, H * 0.6);
+  }
+
+  // distant buildings (not in tunnel)
+  if (!inTunnel) {
+    const bldOffset = (distance * 0.3) % 80;
+    ctx.fillStyle = 'rgba(20,10,50,0.7)';
+    for (let i = 0; i < 20; i++) {
+      const bx = i * 80 - bldOffset;
+      const bh = 40 + ((i * 37) % 80);
+      ctx.fillRect(bx, H * 0.35 - bh, 60, bh);
+      // windows
+      ctx.fillStyle = `rgba(255,200,100,${0.3 + Math.sin(i + distance * 0.001) * 0.2})`;
+      for (let wy = 0; wy < bh - 10; wy += 12) {
+        for (let wx = 0; wx < 60; wx += 14) {
+          if ((i + wy + wx) % 3 === 0)
+            ctx.fillRect(bx + wx + 4, H * 0.35 - bh + wy + 4, 5, 6);
+        }
+      }
+      ctx.fillStyle = 'rgba(20,10,50,0.7)';
+    }
+  } else {
+    // tunnel walls top
+    ctx.fillStyle = '#1a0a2a';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(W, 0);
+    ctx.lineTo(W, H * 0.35);
+    ctx.lineTo(W * 0.7, H * 0.5);
+    ctx.lineTo(W * 0.3, H * 0.5);
+    ctx.lineTo(0, H * 0.35);
+    ctx.closePath();
+    ctx.fill();
+  }
 
   // ground
   const ground = ctx.createLinearGradient(0, H * 0.35, 0, H);
-  ground.addColorStop(0, '#1a0a3a');
-  ground.addColorStop(1, '#000');
+  if (inTunnel) {
+    ground.addColorStop(0, '#1a0a2a'); ground.addColorStop(1, '#000');
+  } else {
+    ground.addColorStop(0, '#1a0a3a'); ground.addColorStop(1, '#000');
+  }
   ctx.fillStyle = ground;
   ctx.fillRect(0, H * 0.35, W, H);
 
-  // grid lines (perspective)
-  ctx.strokeStyle = 'rgba(0,255,255,0.3)';
+  // STATION sign banner (every ~400m)
+  if (stationCycle) {
+    ctx.fillStyle = '#0066cc';
+    ctx.fillRect(W * 0.2, H * 0.25, W * 0.6, 50);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    const stations = ['CENTRAL', 'NORTH', 'EAST GATE', 'BANGKOK', 'NEON', 'CYBER ST'];
+    const sName = stations[Math.floor(distance / 400) % stations.length];
+    ctx.fillText('🚇 ' + sName, W/2, H * 0.25 + 33);
+  }
+
+  // grid lines
+  ctx.strokeStyle = inTunnel ? 'rgba(255,100,255,0.4)' : 'rgba(0,255,255,0.3)';
   ctx.lineWidth = 1.5;
   for (let i = 0; i < 4; i++) {
     ctx.beginPath();
@@ -387,7 +743,7 @@ function draw() {
     ctx.lineTo(p2.x, p2.y);
     ctx.stroke();
   }
-  // horizontal "rails" (moving stripes)
+  // moving rails
   const stripeOffset = (distance * 0.5) % 1;
   for (let i = 0; i < 12; i++) {
     const z = ((i / 12) + stripeOffset) % 1;
@@ -402,10 +758,26 @@ function draw() {
     ctx.stroke();
   }
 
-  // draw coins (sorted by z ascending so far first)
+  // tunnel side lights
+  if (inTunnel) {
+    for (let i = 0; i < 10; i++) {
+      const z = ((i / 10) + stripeOffset * 0.3) % 1;
+      if (z < 0.05) continue;
+      const pL = project(z, -1);
+      const pR = project(z, 3);
+      ctx.fillStyle = `rgba(255,200,100,${z * 0.9})`;
+      ctx.beginPath();
+      ctx.arc(pL.x, pL.y - 100 * pL.scale, 8 * pL.scale, 0, Math.PI * 2);
+      ctx.arc(pR.x, pR.y - 100 * pR.scale, 8 * pR.scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // === DRAWABLES ===
   const drawables = [];
   coinList.forEach(c => { if (!c.picked) drawables.push({ ...c, kind:'coin' }); });
   obstacles.forEach(o => drawables.push({ ...o, kind:'obs' }));
+  powerups.forEach(p => { if (!p.picked) drawables.push({ ...p, kind:'pwr' }); });
   drawables.sort((a,b) => a.z - b.z);
 
   drawables.forEach(d => {
@@ -413,22 +785,29 @@ function draw() {
     const p = project(d.z, d.laneIdx);
     if (d.kind === 'coin') {
       const r = 14 * p.scale;
+      const cy = p.y - 30 * p.scale;
       ctx.beginPath();
-      ctx.arc(p.x, p.y - 30 * p.scale, r, 0, Math.PI * 2);
-      const cg = ctx.createRadialGradient(p.x, p.y - 30 * p.scale, 0, p.x, p.y - 30 * p.scale, r);
+      ctx.arc(p.x, cy, r, 0, Math.PI * 2);
+      const cg = ctx.createRadialGradient(p.x, cy, 0, p.x, cy, r);
       cg.addColorStop(0, '#fff8c0');
       cg.addColorStop(0.5, '#ffe259');
       cg.addColorStop(1, '#cc9c00');
-      ctx.fillStyle = cg;
-      ctx.fill();
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1.5 * p.scale;
-      ctx.stroke();
+      ctx.fillStyle = cg; ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 * p.scale; ctx.stroke();
+    } else if (d.kind === 'pwr') {
+      const r = 22 * p.scale;
+      const cy = p.y - 50 * p.scale;
+      const glowGrad = ctx.createRadialGradient(p.x, cy, 0, p.x, cy, r * 1.5);
+      glowGrad.addColorStop(0, d.type === 'board' ? 'rgba(0,255,255,0.8)' : 'rgba(255,100,255,0.8)');
+      glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glowGrad;
+      ctx.fillRect(p.x - r*1.5, cy - r*1.5, r*3, r*3);
+      ctx.font = `${36 * p.scale}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(d.type === 'board' ? '🛹' : '🚀', p.x, cy + 12 * p.scale);
     } else {
-      // obstacles
       const w = 110 * p.scale, h = 130 * p.scale;
       if (d.type === 'train') {
-        // tall train — full lane block
         ctx.fillStyle = '#ff3344';
         const th = 200 * p.scale;
         roundRect(p.x - w/2, p.y - th, w, th, 10 * p.scale);
@@ -438,17 +817,14 @@ function draw() {
         ctx.fillStyle = 'rgba(255,200,200,0.9)';
         ctx.fillRect(p.x - w/3, p.y - th + 60 * p.scale, w*0.66, 25 * p.scale);
       } else if (d.type === 'high') {
-        // hanging beam — must jump? No, low so jump
         ctx.fillStyle = '#ffaa00';
         roundRect(p.x - w/2, p.y - 60 * p.scale, w, 35 * p.scale, 6 * p.scale);
         ctx.fill();
         ctx.strokeStyle = '#000'; ctx.lineWidth = 2 * p.scale; ctx.stroke();
       } else {
-        // barrier — slide under
         ctx.fillStyle = '#ff66ff';
         roundRect(p.x - w/2, p.y - 80 * p.scale, w, 65 * p.scale, 6 * p.scale);
         ctx.fill();
-        // stripes
         ctx.fillStyle = '#fff';
         for (let s = 0; s < 3; s++) {
           ctx.fillRect(p.x - w/2 + 10*p.scale + s*30*p.scale, p.y - 70*p.scale, 6*p.scale, 45*p.scale);
@@ -457,38 +833,64 @@ function draw() {
     }
   });
 
-  // PLAYER
+  // === PLAYER ===
   const px = player._x || laneX(player.laneIdx);
   const py = H * 0.86 + player.y;
   const ph = player.sliding ? 50 : 90;
   const pw = 50;
+  const skin = SKINS[state.equipped];
   // shadow
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.beginPath();
   ctx.ellipse(px, H * 0.93, 35, 8, 0, 0, Math.PI * 2);
   ctx.fill();
+  // power glow
+  if (powerActive) {
+    const glow = ctx.createRadialGradient(px, py - ph/2, 0, px, py - ph/2, 80);
+    const c = powerActive === 'board' ? '0,255,255' : '255,100,255';
+    glow.addColorStop(0, `rgba(${c},0.6)`);
+    glow.addColorStop(1, `rgba(${c},0)`);
+    ctx.fillStyle = glow;
+    ctx.fillRect(px - 80, py - ph - 30, 160, ph + 60);
+  }
   // body
-  ctx.fillStyle = '#00ffff';
+  ctx.fillStyle = skin.color;
   roundRect(px - pw/2, py - ph, pw, ph, 10);
   ctx.fill();
   ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 3;
-  ctx.stroke();
-  // face
-  ctx.fillStyle = '#fff';
-  ctx.beginPath();
-  ctx.arc(px - 10, py - ph + 20, 4, 0, Math.PI * 2);
-  ctx.arc(px + 10, py - ph + 20, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#000';
-  ctx.beginPath();
-  ctx.arc(px - 10, py - ph + 20, 2, 0, Math.PI * 2);
-  ctx.arc(px + 10, py - ph + 20, 2, 0, Math.PI * 2);
-  ctx.fill();
-  // hat / helmet — tag for sliding
+  ctx.lineWidth = 3; ctx.stroke();
+  // emoji face
+  ctx.font = '36px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(skin.emoji, px, py - ph + 38);
+  // hat for sliding
   if (player.sliding) {
     ctx.fillStyle = '#ffe259';
     roundRect(px - pw/2 - 10, py - 20, pw + 20, 8, 4);
+    ctx.fill();
+  }
+  // hoverboard under
+  if (powerActive === 'board') {
+    ctx.fillStyle = '#00ffff';
+    roundRect(px - pw/2 - 12, py - 8, pw + 24, 10, 5);
+    ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.fillRect(px - pw/2 - 8, py + 2, 8, 4);
+    ctx.fillRect(px + pw/2, py + 2, 8, 4);
+  }
+  // jetpack flame
+  if (powerActive === 'jet') {
+    const flameH = 30 + Math.random() * 20;
+    const fg = ctx.createLinearGradient(px, py, px, py + flameH);
+    fg.addColorStop(0, '#fff');
+    fg.addColorStop(0.5, '#ffaa00');
+    fg.addColorStop(1, 'rgba(255,0,0,0)');
+    ctx.fillStyle = fg;
+    ctx.beginPath();
+    ctx.moveTo(px - 12, py);
+    ctx.lineTo(px + 12, py);
+    ctx.lineTo(px, py + flameH);
+    ctx.closePath();
     ctx.fill();
   }
 
@@ -526,7 +928,8 @@ function loop(t) {
   requestAnimationFrame(loop);
 }
 
-// initial draw
+// init
+loadMission();
 draw();
 </script>
 </body>
