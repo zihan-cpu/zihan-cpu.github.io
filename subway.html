@@ -777,7 +777,44 @@ function draw() {
     ctx.fillRect(xL, yL - sh/2, xR - xL, 2);
   }
 
-  // tunnel side lights
+  // === LANE DANGER FLOOR HIGHLIGHTS ===
+  // For each lane, find the nearest upcoming obstacle and color the lane floor
+  for (let li = 0; li < 3; li++) {
+    const ob = obstacles
+      .filter(o => o.laneIdx === li && o.z > 0 && o.z < 0.85)
+      .sort((a,b) => a.z - b.z)[0];
+    if (!ob) continue;
+    let color;
+    if (ob.type === 'train')      color = 'rgba(255,40,40,0.35)';      // red — switch lane
+    else if (ob.type === 'high')  color = 'rgba(255,180,0,0.35)';      // yellow — jump
+    else                          color = 'rgba(255,80,200,0.35)';     // pink — slide
+    // build a quad from z=ob.z back to z=0.05 in this lane
+    const zNear = Math.min(ob.z, 0.85);
+    const zFar = Math.max(0.05, zNear - 0.5);
+    const tlL = project(zFar, li - 0.5);
+    const tlR = project(zFar, li + 0.5);
+    const blL = project(zNear, li - 0.5);
+    const blR = project(zNear, li + 0.5);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(tlL.x, tlL.y);
+    ctx.lineTo(tlR.x, tlR.y);
+    ctx.lineTo(blR.x, blR.y);
+    ctx.lineTo(blL.x, blL.y);
+    ctx.closePath();
+    ctx.fill();
+    // pulsing arrow indicator at top of lane
+    const pulse = 0.6 + 0.4 * Math.sin(performance.now() * 0.008);
+    const arrowP = project(zFar + 0.02, li);
+    ctx.fillStyle = ob.type === 'train' ? `rgba(255,80,80,${pulse})`
+                  : ob.type === 'high'  ? `rgba(255,200,40,${pulse})`
+                                        : `rgba(255,100,220,${pulse})`;
+    ctx.font = `bold ${22}px sans-serif`;
+    ctx.textAlign = 'center';
+    const icon = ob.type === 'train' ? '⚠' : ob.type === 'high' ? '⬆' : '⬇';
+    ctx.fillText(icon, arrowP.x, arrowP.y - 6);
+  }
+
   if (inTunnel) {
     for (let i = 0; i < 10; i++) {
       const z = ((i / 10) + stripeOffset * 0.3) % 1;
