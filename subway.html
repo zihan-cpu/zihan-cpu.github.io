@@ -660,48 +660,60 @@ function draw() {
   const stationCycle = Math.floor(distance / 400) % 3 === 0 && (distance % 400) < 80;
   const inTunnel = (distance % 200) > 80 && (distance % 200) < 180;
 
-  // sky — deep premium gradient
+  // sky — sunset/dusk gradient (Mumbai-style)
   const sky = ctx.createLinearGradient(0, 0, 0, H * 0.55);
   if (inTunnel) {
-    sky.addColorStop(0, '#000');
-    sky.addColorStop(0.5, '#0a0218');
-    sky.addColorStop(1, '#1a0033');
+    sky.addColorStop(0, '#1a0a1f');
+    sky.addColorStop(0.5, '#2b1235');
+    sky.addColorStop(1, '#4a1a3f');
   } else {
-    sky.addColorStop(0, '#02041a');
-    sky.addColorStop(0.45, '#1a0b3a');
-    sky.addColorStop(0.85, '#5a1f6e');
-    sky.addColorStop(1, '#a83975');
+    sky.addColorStop(0, '#1a1a4f');     // deep purple top
+    sky.addColorStop(0.35, '#5a2a7a');   // violet
+    sky.addColorStop(0.65, '#d65a4a');   // orange
+    sky.addColorStop(0.85, '#ffaa55');   // warm orange
+    sky.addColorStop(1, '#ffd28a');      // peachy horizon
   }
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H * 0.55);
 
-  // sun (only outside tunnel)
+  // big setting sun (only outside tunnel)
   if (!inTunnel) {
-    const sunY = H * 0.4;
-    const sg = ctx.createRadialGradient(W/2, sunY, 0, W/2, sunY, 200);
-    sg.addColorStop(0, 'rgba(255,255,150,0.8)');
-    sg.addColorStop(1, 'rgba(255,100,150,0)');
-    ctx.fillStyle = sg;
+    const sunY = H * 0.42;
+    // outer glow
+    const sgOuter = ctx.createRadialGradient(W/2, sunY, 0, W/2, sunY, 380);
+    sgOuter.addColorStop(0, 'rgba(255,200,120,0.7)');
+    sgOuter.addColorStop(0.5, 'rgba(255,140,80,0.3)');
+    sgOuter.addColorStop(1, 'rgba(255,100,150,0)');
+    ctx.fillStyle = sgOuter;
     ctx.fillRect(0, 0, W, H * 0.6);
+    // sun disc
+    const sg = ctx.createRadialGradient(W/2, sunY, 0, W/2, sunY, 130);
+    sg.addColorStop(0, '#fff7d0');
+    sg.addColorStop(0.5, '#ffd070');
+    sg.addColorStop(1, 'rgba(255,160,80,0)');
+    ctx.fillStyle = sg;
+    ctx.beginPath();
+    ctx.arc(W/2, sunY, 130, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  // distant buildings (not in tunnel)
+  // city skyline silhouette (dark against sunset)
   if (!inTunnel) {
     const bldOffset = (distance * 0.3) % 80;
-    ctx.fillStyle = 'rgba(20,10,50,0.7)';
+    ctx.fillStyle = '#1a0a25';
     for (let i = 0; i < 20; i++) {
       const bx = i * 80 - bldOffset;
-      const bh = 40 + ((i * 37) % 80);
-      ctx.fillRect(bx, H * 0.35 - bh, 60, bh);
-      // windows
-      ctx.fillStyle = `rgba(255,200,100,${0.3 + Math.sin(i + distance * 0.001) * 0.2})`;
-      for (let wy = 0; wy < bh - 10; wy += 12) {
-        for (let wx = 0; wx < 60; wx += 14) {
-          if ((i + wy + wx) % 3 === 0)
-            ctx.fillRect(bx + wx + 4, H * 0.35 - bh + wy + 4, 5, 6);
+      const bh = 50 + ((i * 37) % 90);
+      ctx.fillRect(bx, H * 0.45 - bh, 60, bh);
+      // a few warm windows lit
+      ctx.fillStyle = `rgba(255,180,90,${0.4 + Math.sin(i + distance * 0.001) * 0.2})`;
+      for (let wy = 0; wy < bh - 10; wy += 14) {
+        for (let wx = 0; wx < 60; wx += 16) {
+          if ((i + wy + wx) % 4 === 0)
+            ctx.fillRect(bx + wx + 5, H * 0.45 - bh + wy + 4, 5, 6);
         }
       }
-      ctx.fillStyle = 'rgba(20,10,50,0.7)';
+      ctx.fillStyle = '#1a0a25';
     }
   } else {
     // tunnel walls top
@@ -739,11 +751,11 @@ function draw() {
     ctx.fillText('🚇 ' + sName, W/2, H * 0.25 + 33);
   }
 
-  // ===== GROUND: lighter slate track bed =====
+  // ===== GROUND: warm dusty track bed =====
   const horizonY = H * 0.45;
   const groundGrad = ctx.createLinearGradient(0, horizonY, 0, H);
-  groundGrad.addColorStop(0, '#3a2e44');
-  groundGrad.addColorStop(1, '#1a1320');
+  groundGrad.addColorStop(0, '#5a3a28');
+  groundGrad.addColorStop(1, '#1f120a');
   ctx.fillStyle = groundGrad;
   ctx.fillRect(0, horizonY, W, H - horizonY);
 
@@ -870,15 +882,23 @@ function draw() {
     } else {
       const w = 110 * p.scale;
       if (d.type === 'train') {
-        ctx.fillStyle = '#ff1144';
+        // 🟡 yellow subway car (subway surfers style)
+        ctx.fillStyle = '#ffcc00';
         const th = 200 * p.scale;
         roundRect(p.x - w/2, p.y - th, w, th, 10 * p.scale);
         ctx.fill();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3 * p.scale; ctx.stroke();
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(p.x - w/3, p.y - th + 14 * p.scale, w*0.66, 28 * p.scale);
-        ctx.fillStyle = 'rgba(255,220,220,0.95)';
-        ctx.fillRect(p.x - w/3, p.y - th + 56 * p.scale, w*0.66, 24 * p.scale);
+        ctx.strokeStyle = '#222'; ctx.lineWidth = 3 * p.scale; ctx.stroke();
+        // dark stripe
+        ctx.fillStyle = '#222';
+        ctx.fillRect(p.x - w/2, p.y - th * 0.55, w, 8 * p.scale);
+        // windows (front + sides)
+        ctx.fillStyle = '#7ad8ff';
+        ctx.fillRect(p.x - w/3, p.y - th + 18 * p.scale, w*0.66, 36 * p.scale);
+        ctx.fillStyle = 'rgba(180,230,255,0.85)';
+        ctx.fillRect(p.x - w/3, p.y - th + 62 * p.scale, w*0.66, 28 * p.scale);
+        // headlight
+        ctx.fillStyle = '#fff8c0';
+        ctx.fillRect(p.x - 10 * p.scale, p.y - 12 * p.scale, 20 * p.scale, 6 * p.scale);
       } else if (d.type === 'high') {
         // ⬆ JUMP — yellow striped low bar
         ctx.fillStyle = '#ffaa00';
