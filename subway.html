@@ -499,13 +499,13 @@ function spawn() {
     used.add(l);
     const types = ['barrier','train','high'];
     const type = types[Math.floor(Math.random() * types.length)];
-    obstacles.push({ laneIdx: l, z: -100, type });
+    obstacles.push({ laneIdx: l, z: -0.05, type });
   }
   for (let l = 0; l < 3; l++) {
     if (!used.has(l) && Math.random() < 0.55) {
       const n = 3 + Math.floor(Math.random() * 3);
       for (let k = 0; k < n; k++) {
-        coinList.push({ laneIdx: l, z: -100 - k * 70, picked: false });
+        coinList.push({ laneIdx: l, z: -0.05 - k * 0.04, picked: false });
       }
     }
   }
@@ -515,7 +515,7 @@ function spawn() {
     if (freeLanes.length) {
       const l = freeLanes[Math.floor(Math.random() * freeLanes.length)];
       const ptype = Math.random() < 0.5 ? 'board' : 'jet';
-      powerups.push({ laneIdx: l, z: -120, type: ptype, picked: false });
+      powerups.push({ laneIdx: l, z: -0.1, type: ptype, picked: false });
     }
   }
 }
@@ -574,7 +574,7 @@ function update(dt) {
   }
 
   // move forward
-  const fwd = speed * dt * 0.0035;
+  const fwd = speed * dt * 0.00045;
   obstacles.forEach(o => o.z += fwd);
   coinList.forEach(c => c.z += fwd);
   powerups.forEach(p => p.z += fwd);
